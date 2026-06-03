@@ -48,6 +48,118 @@ window.UtilidadesCSV = (function () {
             .trim();
     }
 
+    function expandirApodos(tokens) {
+        if (!Array.isArray(tokens) || tokens.length === 0) return [];
+
+        const alias = {
+            nico: 'nicolas',
+            fer: 'fernando',
+            fede: 'federico',
+            facu: 'facundo',
+            peter: 'pedro',
+            lichy: 'lisandro',
+            nacho: 'ignacio'
+        };
+
+        return tokens.map((token, indice) => {
+            if (indice === 0 && alias[token]) return alias[token];
+            return token;
+        });
+    }
+
+    function normalizarNombreComponentes(valor) {
+        if (valor === undefined || valor === null) return [];
+
+        const texto = String(valor)
+            .trim()
+            .replace(/\d+/g, ' ')
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/[^A-Za-z\u00C0-\u00FF]+/g, ' ')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        if (!texto) return [];
+
+        return expandirApodos(texto.split(' ').filter(Boolean));
+    }
+
+    function _obtenerApellido(tokens) {
+        if (!Array.isArray(tokens) || tokens.length === 0) return '';
+        return tokens[tokens.length - 1] || '';
+    }
+
+    function _obtenerNombre(tokens) {
+        if (!Array.isArray(tokens) || tokens.length === 0) return '';
+        return tokens[0] || '';
+    }
+
+    function _esAbreviacionPrefijo(corto, largo) {
+        if (!corto || !largo) return false;
+        if (corto === largo) return true;
+        if (corto.length < 4) return false;
+        if (largo.length <= corto.length) return false;
+        return largo.startsWith(corto);
+    }
+
+    function _tokensCompartidos(tokensA, tokensB) {
+        if (!Array.isArray(tokensA) || !Array.isArray(tokensB)) return [];
+
+        const setB = new Set(tokensB);
+        return tokensA.filter(token => token && token.length >= 4 && setB.has(token));
+    }
+
+    function generarPermutaciones(tokens) {
+        const resultados = [];
+        const arr = [...tokens];
+
+        const permutar = (inicio = 0) => {
+            if (inicio === arr.length - 1) {
+                resultados.push([...arr]);
+                return;
+            }
+
+            for (let i = inicio; i < arr.length; i++) {
+                [arr[inicio], arr[i]] = [arr[i], arr[inicio]];
+                permutar(inicio + 1);
+                [arr[inicio], arr[i]] = [arr[i], arr[inicio]];
+            }
+        };
+
+        if (arr.length === 1) {
+            resultados.push(arr);
+            return resultados;
+        }
+
+        permutar(0);
+        return resultados;
+    }
+
+    function obtenerClavesNombre(valor) {
+        const tokens = normalizarNombreComponentes(valor);
+        if (tokens.length === 0) return [];
+
+        const claves = new Set();
+        const compacta = tokens.join('');
+        const ordenada = [...tokens].sort();
+
+        claves.add(tokens.join(' '));
+        claves.add(compacta);
+        claves.add(ordenada.join(' '));
+        claves.add(ordenada.join(''));
+
+        if (tokens.length <= 3) {
+            generarPermutaciones(tokens).forEach(permutacion => {
+                claves.add(permutacion.join(' '));
+                claves.add(permutacion.join(''));
+            });
+        }
+
+        return [...claves].filter(Boolean);
+    }
+
     function normalizarFechaComparacion(valor) {
         if (valor === undefined || valor === null) return '';
 
@@ -75,24 +187,119 @@ window.UtilidadesCSV = (function () {
     }
 
     function construirIndiceInscriptos(inscriptos) {
-        const indice = new Map();
-
-        inscriptos.forEach(inscripto => {
-            const nombre = obtenerPrimerValor(inscripto, ['NOMBRE', 'Nombre', 'Piloto', 'PILOTO']);
-            const clave = normalizarTextoComparacion(nombre);
-
-            if (!clave || indice.has(clave)) return;
-
-            indice.set(clave, {
-                nombre,
+        return inscriptos
+            .map(inscripto => ({
+                nombre: obtenerPrimerValor(inscripto, ['NOMBRE', 'Nombre', 'Piloto', 'PILOTO']),
                 vehiculo: obtenerPrimerValor(inscripto, ['VEHICULO', 'Vehiculo', 'Auto', 'AUTO']),
                 categoria: obtenerPrimerValor(inscripto, ['CATEGORIA', 'Categoria']),
                 fecha: obtenerPrimerValor(inscripto, ['Fecha', 'FECHA', 'fecha']),
                 online: obtenerPrimerValor(inscripto, ['Online', 'ONLINE']),
-            });
-        });
+                claves: obtenerClavesNombre(obtenerPrimerValor(inscripto, ['NOMBRE', 'Nombre', 'Piloto', 'PILOTO']))
+            }))
+            .filter(inscripto => inscripto.nombre);
+    }
 
-        return indice;
+    function _compactarClave(clave) {
+        return String(clave || '').replace(/\s+/g, '');
+    }
+
+    function _ordenarTokens(clave) {
+        return String(clave || '')
+            .trim()
+            .split(' ')
+            .filter(Boolean)
+            .sort()
+            .join(' ');
+    }
+
+    function _esSubsecuencia(tokensCortos, tokensLargos) {
+        if (!Array.isArray(tokensCortos) || !Array.isArray(tokensLargos)) return false;
+        if (tokensCortos.length === 0 || tokensCortos.length > tokensLargos.length) return false;
+
+        let indiceLargo = 0;
+
+        for (const token of tokensCortos) {
+            let encontrado = false;
+
+            while (indiceLargo < tokensLargos.length) {
+                if (tokensLargos[indiceLargo] === token) {
+                    encontrado = true;
+                    indiceLargo++;
+                    break;
+                }
+                indiceLargo++;
+            }
+
+            if (!encontrado) return false;
+        }
+
+        return true;
+    }
+
+    function encontrarCoincidenciaNombre(nombrePiloto, indiceInscriptos) {
+        const clavesPiloto = obtenerClavesNombre(nombrePiloto);
+        const tokensPiloto = normalizarNombreComponentes(nombrePiloto);
+        const nombrePilotoBase = _obtenerNombre(tokensPiloto);
+        const compactoPiloto = _compactarClave(normalizarTextoComparacion(nombrePiloto));
+
+        for (const inscripto of indiceInscriptos) {
+            const claves = inscripto.claves || [];
+            const tokensIncripto = normalizarNombreComponentes(inscripto.nombre);
+            const nombreIncriptoBase = _obtenerNombre(tokensIncripto);
+            const compactoIncripto = _compactarClave(normalizarTextoComparacion(inscripto.nombre));
+
+            for (const clavePiloto of clavesPiloto) {
+                const clavePilotoCompacta = _compactarClave(clavePiloto);
+                const clavePilotoOrdenada = _ordenarTokens(clavePiloto);
+
+                for (const claveIncripto of claves) {
+                    const claveIncriptoCompacta = _compactarClave(claveIncripto);
+                    const claveIncriptoOrdenada = _ordenarTokens(claveIncripto);
+                    const compartidos = _tokensCompartidos(tokensPiloto, tokensIncripto);
+
+                    if (!clavePilotoCompacta || !claveIncriptoCompacta) continue;
+
+                    if (clavePilotoCompacta === claveIncriptoCompacta) {
+                        return inscripto;
+                    }
+
+                    if (clavePilotoOrdenada && clavePilotoOrdenada === claveIncriptoOrdenada) {
+                        return inscripto;
+                    }
+
+                    if (compartidos.length > 0 && _esAbreviacionPrefijo(nombrePilotoBase, nombreIncriptoBase)) {
+                        return inscripto;
+                    }
+
+                    if (compartidos.length > 0 && _esAbreviacionPrefijo(nombreIncriptoBase, nombrePilotoBase)) {
+                        return inscripto;
+                    }
+
+                    if (_esSubsecuencia(tokensPiloto, tokensIncripto)) {
+                        return inscripto;
+                    }
+
+                    if (_esSubsecuencia(tokensIncripto, tokensPiloto)) {
+                        return inscripto;
+                    }
+
+                    if (compactoPiloto && compactoIncripto) {
+                        const pilotoContieneIncripto = tokensIncripto
+                            .filter(token => token.length >= 4)
+                            .every(token => compactoPiloto.includes(token));
+                        const incriptoContienePiloto = tokensPiloto
+                            .filter(token => token.length >= 4)
+                            .every(token => compactoIncripto.includes(token));
+
+                        if (pilotoContieneIncripto || incriptoContienePiloto) {
+                            return inscripto;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     function fusionarPilotosConInscriptos(pilotos, inscriptos, fechaRally = '') {
@@ -102,8 +309,7 @@ window.UtilidadesCSV = (function () {
         return pilotos
             .map(piloto => {
                 const nombrePiloto = obtenerPrimerValor(piloto, ['Nombre', 'NOMBRE', 'Piloto', 'PILOTO']);
-                const clave = normalizarTextoComparacion(nombrePiloto);
-                const inscripto = indice.get(clave);
+                const inscripto = encontrarCoincidenciaNombre(nombrePiloto, indice);
 
                 if (!inscripto) return null;
 
@@ -182,6 +388,8 @@ window.UtilidadesCSV = (function () {
         analizarCSV,
         esValorSi,
         normalizarTextoComparacion,
+        normalizarNombreComponentes,
+        obtenerClavesNombre,
         normalizarFechaComparacion,
         obtenerPrimerValor,
         fusionarPilotosConInscriptos
