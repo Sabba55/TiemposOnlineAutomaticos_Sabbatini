@@ -48,6 +48,10 @@ window.UtilidadesCSV = (function () {
             .trim();
     }
 
+    function normalizarTextoCompacto(valor) {
+        return normalizarTextoComparacion(valor).replace(/\s+/g, '');
+    }
+
     function expandirApodos(tokens) {
         if (!Array.isArray(tokens) || tokens.length === 0) return [];
 
@@ -56,6 +60,7 @@ window.UtilidadesCSV = (function () {
             fer: 'fernando',
             fede: 'federico',
             facu: 'facundo',
+            eze: 'ezequiel',
             peter: 'pedro',
             lichy: 'lisandro',
             nacho: 'ignacio'
@@ -236,70 +241,115 @@ window.UtilidadesCSV = (function () {
         return true;
     }
 
+    function obtenerExcepcionNombre(nombrePiloto) {
+        const excepciones = {
+            leoespindola: 'Leonardo Espindola'
+        };
+
+        return excepciones[normalizarTextoCompacto(nombrePiloto)] || '';
+    }
+
+    function _puntuarCoincidenciaNombre(nombrePiloto, inscripto, clavesPiloto, tokensPiloto, nombrePilotoBase, compactoPiloto) {
+        const claves = inscripto.claves || [];
+        const tokensIncripto = normalizarNombreComponentes(inscripto.nombre);
+        const nombreIncriptoBase = _obtenerNombre(tokensIncripto);
+        const compactoIncripto = _compactarClave(normalizarTextoComparacion(inscripto.nombre));
+        const compartidos = _tokensCompartidos(tokensPiloto, tokensIncripto);
+
+        let mejorPuntaje = 0;
+
+        for (const clavePiloto of clavesPiloto) {
+            const clavePilotoCompacta = _compactarClave(clavePiloto);
+            const clavePilotoOrdenada = _ordenarTokens(clavePiloto);
+
+            for (const claveIncripto of claves) {
+                const claveIncriptoCompacta = _compactarClave(claveIncripto);
+                const claveIncriptoOrdenada = _ordenarTokens(claveIncripto);
+
+                if (!clavePilotoCompacta || !claveIncriptoCompacta) continue;
+
+                let puntaje = 0;
+
+                if (clavePilotoCompacta === claveIncriptoCompacta) {
+                    puntaje = Math.max(puntaje, 100);
+                }
+
+                if (clavePilotoOrdenada && clavePilotoOrdenada === claveIncriptoOrdenada) {
+                    puntaje = Math.max(puntaje, 95);
+                }
+
+                if (compartidos.length > 0 && _esAbreviacionPrefijo(nombrePilotoBase, nombreIncriptoBase)) {
+                    puntaje = Math.max(puntaje, 35 + (compartidos.length * 5));
+                }
+
+                if (compartidos.length > 0 && _esAbreviacionPrefijo(nombreIncriptoBase, nombrePilotoBase)) {
+                    puntaje = Math.max(puntaje, 35 + (compartidos.length * 5));
+                }
+
+                if (_esSubsecuencia(tokensPiloto, tokensIncripto) || _esSubsecuencia(tokensIncripto, tokensPiloto)) {
+                    puntaje = Math.max(puntaje, 45 + (compartidos.length * 5));
+                }
+
+                if (compactoPiloto && compactoIncripto) {
+                    const pilotoContieneIncripto = tokensIncripto
+                        .filter(token => token.length >= 4)
+                        .every(token => compactoPiloto.includes(token));
+                    const incriptoContienePiloto = tokensPiloto
+                        .filter(token => token.length >= 4)
+                        .every(token => compactoIncripto.includes(token));
+
+                    if (pilotoContieneIncripto || incriptoContienePiloto) {
+                        puntaje = Math.max(puntaje, 25 + (compartidos.length * 5));
+                    }
+                }
+
+                if (compartidos.length > 0) {
+                    puntaje = Math.max(puntaje, 15 + (compartidos.length * 5));
+                }
+
+                mejorPuntaje = Math.max(mejorPuntaje, puntaje);
+            }
+        }
+
+        return mejorPuntaje;
+    }
+
     function encontrarCoincidenciaNombre(nombrePiloto, indiceInscriptos) {
+        const nombreExcepcion = obtenerExcepcionNombre(nombrePiloto);
+        if (nombreExcepcion) {
+            const coincidenciaExcepcion = indiceInscriptos.find(inscripto =>
+                normalizarTextoCompacto(inscripto.nombre) === normalizarTextoCompacto(nombreExcepcion)
+            );
+
+            if (coincidenciaExcepcion) {
+                return coincidenciaExcepcion;
+            }
+        }
+
         const clavesPiloto = obtenerClavesNombre(nombrePiloto);
         const tokensPiloto = normalizarNombreComponentes(nombrePiloto);
         const nombrePilotoBase = _obtenerNombre(tokensPiloto);
         const compactoPiloto = _compactarClave(normalizarTextoComparacion(nombrePiloto));
+        let mejorCoincidencia = null;
+        let mejorPuntaje = 0;
 
         for (const inscripto of indiceInscriptos) {
-            const claves = inscripto.claves || [];
-            const tokensIncripto = normalizarNombreComponentes(inscripto.nombre);
-            const nombreIncriptoBase = _obtenerNombre(tokensIncripto);
-            const compactoIncripto = _compactarClave(normalizarTextoComparacion(inscripto.nombre));
+            const puntaje = _puntuarCoincidenciaNombre(
+                nombrePiloto,
+                inscripto,
+                clavesPiloto,
+                tokensPiloto,
+                nombrePilotoBase,
+                compactoPiloto
+            );
 
-            for (const clavePiloto of clavesPiloto) {
-                const clavePilotoCompacta = _compactarClave(clavePiloto);
-                const clavePilotoOrdenada = _ordenarTokens(clavePiloto);
-
-                for (const claveIncripto of claves) {
-                    const claveIncriptoCompacta = _compactarClave(claveIncripto);
-                    const claveIncriptoOrdenada = _ordenarTokens(claveIncripto);
-                    const compartidos = _tokensCompartidos(tokensPiloto, tokensIncripto);
-
-                    if (!clavePilotoCompacta || !claveIncriptoCompacta) continue;
-
-                    if (clavePilotoCompacta === claveIncriptoCompacta) {
-                        return inscripto;
-                    }
-
-                    if (clavePilotoOrdenada && clavePilotoOrdenada === claveIncriptoOrdenada) {
-                        return inscripto;
-                    }
-
-                    if (compartidos.length > 0 && _esAbreviacionPrefijo(nombrePilotoBase, nombreIncriptoBase)) {
-                        return inscripto;
-                    }
-
-                    if (compartidos.length > 0 && _esAbreviacionPrefijo(nombreIncriptoBase, nombrePilotoBase)) {
-                        return inscripto;
-                    }
-
-                    if (_esSubsecuencia(tokensPiloto, tokensIncripto)) {
-                        return inscripto;
-                    }
-
-                    if (_esSubsecuencia(tokensIncripto, tokensPiloto)) {
-                        return inscripto;
-                    }
-
-                    if (compactoPiloto && compactoIncripto) {
-                        const pilotoContieneIncripto = tokensIncripto
-                            .filter(token => token.length >= 4)
-                            .every(token => compactoPiloto.includes(token));
-                        const incriptoContienePiloto = tokensPiloto
-                            .filter(token => token.length >= 4)
-                            .every(token => compactoIncripto.includes(token));
-
-                        if (pilotoContieneIncripto || incriptoContienePiloto) {
-                            return inscripto;
-                        }
-                    }
-                }
+            if (puntaje > mejorPuntaje) {
+                mejorPuntaje = puntaje;
+                mejorCoincidencia = inscripto;
             }
         }
 
-        return null;
+        return mejorPuntaje >= 40 ? mejorCoincidencia : null;
     }
 
     function fusionarPilotosConInscriptos(pilotos, inscriptos, fechaRally = '') {
@@ -388,6 +438,7 @@ window.UtilidadesCSV = (function () {
         analizarCSV,
         esValorSi,
         normalizarTextoComparacion,
+        normalizarTextoCompacto,
         normalizarNombreComponentes,
         obtenerClavesNombre,
         normalizarFechaComparacion,
