@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/shared/error.css">
+    <title>Pagina de tiempos - Sabbatini</title>
+</head>
+
+<body>
+    <div class="header-banner">
+        <div class="header-content">
+            <div class="header-title-wrapper">
+                <h1 class="header-title" id="rallyName">Pagina de tiempos</h1>
+                <div class="header-subtitle">Sistema de seguimiento automotizado</div>
+            </div>
+            <div class="logo-container">
+                <img src="assets/logoSabbatini.png" alt="Rally Logo">
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="buttonContainer">
+            <button class="btn-clases-header" onclick="window.location.href='pages/inscriptos.html'">
+                INSCRIPTOS
+            </button>
+            <button class="btn-clases-header" onclick="window.location.href='pages/ordenLargada.html'">
+                ORDEN DE LARGADA
+            </button>
+            <button class="btn-clases-header" onclick="window.location.href='pages/estadisticas.html'">
+                ESTADISTICAS
+            </button>
+        </div>
+        <div id="content" class="loading">Cargando datos</div>
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script src="/js/shared/csv.js"></script>
+    <script src="/js/shared/time.js"></script>
+    <script src="/js/shared/dnf.js"></script>
+    <script src="/js/shared/icons.js"></script>
+    <script src="/js/index.js"></script>
+    <script src="/js/pdfGenerator.js"></script>
+
+</body>
+</html>

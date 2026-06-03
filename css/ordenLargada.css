@@ -1,0 +1,461 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-grafito-950: #111315;
+    --color-grafito-900: #1a1d21;
+    --color-grafito-800: #232830;
+    --color-grafito-700: #303743;
+    --color-azul-principal: #0f172a;
+    --color-azul-principal-hover: #1b263b;
+    --color-panel: #f4f6f8;
+    --color-panel-brillo: #ffffff;
+    --color-borde: #3c4656;
+    --color-borde-suave: #d7dde5;
+    --color-texto: #161c25;
+    --color-texto-suave: #5a6472;
+    --color-texto-claro: #e8edf3;
+    --color-error: #a61b1b;
+    --color-estado-normal: #c9defc;
+    --color-estado-cercana: #fff1b8;
+    --color-estado-urgente: #fcc2c2;
+    --color-estado-ahora: #c7f5d7;
+    --color-estado-normal-borde: #4f7bb8;
+    --color-estado-cercana-borde: #c6a63a;
+    --color-estado-urgente-borde: #d67777;
+    --color-estado-ahora-borde: #4f9e6a;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--color-grafito-900) 0%, var(--color-azul-principal) 100%);
+    min-height: 100vh;
+    padding: 20px;
+    min-width: 1300px;
+}
+
+.container {
+    max-width: 1300px;
+    min-width: 1300px;
+    margin: 30px auto;
+    background: rgba(255, 255, 255, 0.94);
+    padding: 30px;
+    border-radius: 20px;
+    border: 1px solid rgba(215, 221, 229, 0.9);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--color-azul-principal) 0%, var(--color-grafito-800) 100%);
+    color: var(--color-texto-claro);
+    padding: 12px 24px;
+    text-decoration: none;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-back:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.36);
+    background: linear-gradient(135deg, var(--color-azul-principal-hover) 0%, var(--color-grafito-700) 100%);
+}
+
+h1 {
+    font-family: 'Orbitron', serif;
+    text-align: center;
+    color: var(--color-azul-principal);
+    margin-bottom: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+#proximaLargadaContainer {
+    margin: 25px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.sin-largadas {
+    background: linear-gradient(135deg, var(--color-azul-principal) 0%, var(--color-grafito-800) 100%);
+    color: var(--color-texto-claro);
+    padding: 15px 30px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+}
+
+.contador-card {
+    border-radius: 16px;
+    padding: 20px 28px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    min-width: 680px;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.contador-card.normal {
+    border-color: var(--color-estado-normal-borde);
+    background: var(--color-estado-normal);
+}
+
+.contador-card.cercana {
+    border-color: var(--color-estado-cercana-borde);
+    background: var(--color-estado-cercana);
+}
+
+.contador-card.urgente {
+    border-color: var(--color-estado-urgente-borde);
+    background: var(--color-estado-urgente);
+}
+
+.contador-card.largando-ahora {
+    border-color: var(--color-estado-ahora-borde);
+    background: var(--color-estado-ahora);
+}
+
+.contador-header {
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.contador-titulo {
+    font-family: 'Orbitron', serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-azul-principal);
+    letter-spacing: 1px;
+}
+
+.contador-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-piloto {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.info-item .label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.info-item .valor {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-azul-principal);
+}
+
+.info-item .valor.nombre,
+.info-item .valor.horario {
+    font-size: 17px;
+}
+
+.loading {
+    text-align: center;
+    padding: 12px 20px;
+    font-size: 18px;
+    color: var(--color-texto-suave);
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+.category-section {
+    margin-bottom: 35px;
+}
+
+.table-wrapper {
+    margin-bottom: 5px;
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+}
+
+table {
+    width: 90%;
+    min-width: 500px;
+    border-collapse: collapse;
+    border: 2px solid var(--color-azul-principal);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+}
+
+th,
+td {
+    padding: 12px 20px;
+    white-space: nowrap;
+    font-size: 16px;
+}
+
+th {
+    background: var(--color-azul-principal);
+    color: var(--color-texto-claro);
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+th:last-child {
+    border-right: none;
+}
+
+td {
+    text-align: center;
+    border-bottom: 1px solid var(--color-borde-suave);
+    border-right: 1px solid var(--color-borde-suave);
+    background-color: var(--color-panel-brillo);
+    color: var(--color-texto);
+    height: 50px;
+    vertical-align: middle;
+}
+
+td:last-child {
+    border-right: none;
+}
+
+td strong {
+    font-size: 18px;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:nth-child(odd) td {
+    background-color: #f0f3f6;
+}
+
+tbody tr:nth-child(even) td {
+    background-color: var(--color-panel-brillo);
+}
+
+tbody tr:hover td {
+    background-color: #87baf89d !important;
+}
+
+.numero-badge {
+    display: inline-block;
+    color: var(--color-azul-principal);
+    font-family: 'Orbitron', serif;
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.pe-horario-cell {
+    font-weight: 800;
+    color: #1f4b8f;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.pe-horario-largando {
+    background: #4f9e6a !important;
+    color: white !important;
+    font-weight: 900 !important;
+    box-shadow: 0 0 10px rgba(79, 158, 106, 0.35) !important;
+}
+
+tr:hover .pe-horario-cell {
+    color: #183f7b !important;
+}
+
+tr:hover .pe-horario-largando {
+    background: #43885b !important;
+    color: white !important;
+}
+
+td.celda-largando {
+    background: #4f9e6a !important;
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+tr:hover td.celda-largando {
+    background: #4f9e6a !important;
+    color: white !important;
+}
+
+.error {
+    background: linear-gradient(135deg, var(--color-error) 0%, #c62828 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin: 20px 0;
+    box-shadow: 0 8px 18px rgba(166, 27, 27, 0.24);
+}
+
+.last-update {
+    text-align: center;
+    color: var(--color-texto-suave);
+    font-size: 14px;
+    margin-top: 25px;
+    padding: 15px;
+    background: #eef2f6;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.separador-piloto {
+    border: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+    margin: 8px 0;
+}
+
+/* ── Pin / Fijar piloto ─────────────────────────────────────────── */
+.col-pin {
+    width: 42px;
+    padding: 0 !important;
+    text-align: center !important;
+}
+
+.btn-pin {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #b0bac6;
+    transition: color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    line-height: 1;
+}
+
+.btn-pin:hover {
+    color: var(--color-azul-principal);
+    background: rgba(15, 23, 42, 0.08);
+    transform: scale(1.15);
+}
+
+.btn-pin.fijado {
+    color: #1f4b8f;
+    transform: rotate(-30deg);
+}
+
+.btn-pin.fijado:hover {
+    color: var(--color-error);
+    background: rgba(166, 27, 27, 0.08);
+    transform: rotate(-30deg) scale(1.15);
+}
+
+.btn-pin.deshabilitado {
+    cursor: not-allowed;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* ── Sección de fijados ─────────────────────────────────────────── */
+#fijadosContainer {
+    margin: 0 0 28px 0;
+    display: none;
+}
+
+.fijados-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 0 5%;
+}
+
+.fijados-titulo {
+    font-family: 'Orbitron', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-azul-principal);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fijados-badge {
+    background: var(--color-azul-principal);
+    color: var(--color-texto-claro);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+.fijados-limpiar {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--color-borde-suave);
+    color: var(--color-texto-suave);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fijados-limpiar:hover {
+    background: var(--color-error);
+    border-color: var(--color-error);
+    color: white;
+}
+
+/* Fila fijada en la tabla principal */
+tbody tr.fila-fijada td {
+    background-color: #dbeafe !important;
+}
+
+tbody tr.fila-fijada:hover td {
+    background-color: #87baf89d !important;
+}
+
+tbody tr.fila-fijada td.celda-largando {
+    background: #4f9e6a !important;
+    color: white !important;
+}

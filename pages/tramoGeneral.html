@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/tramoGeneral.css">
+    <title>Clasificación General - Sabbatini</title>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/index.html" class="btn-back">
+            <span>←</span>
+            <span>Volver al Menú</span>
+        </a>
+        <div class="pe-nav-container">
+            <div class="pe-nav-btn-wrapper">
+                <button class="pe-nav-btn" id="btnPeAnterior" onclick="navegarPE(-1)" disabled>&#8249;</button>
+            </div>
+            <h1 id="title">CLASIFICACIÓN GENERAL</h1>
+            <div class="pe-nav-btn-wrapper">
+                <button class="pe-nav-btn" id="btnPeSiguiente" onclick="navegarPE(1)" disabled>&#8250;</button>
+            </div>
+        </div>
+        <div id="content" class="loading">Cargando datos</div>
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script src="/js/shared/csv.js"></script>
+    <script src="/js/shared/time.js"></script>
+    <script src="/js/shared/dnf.js"></script>
+    <script src="/js/tramoGeneral.js"></script>
+</body>
+</html>
