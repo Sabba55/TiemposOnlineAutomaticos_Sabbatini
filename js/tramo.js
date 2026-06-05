@@ -301,7 +301,7 @@ function renderizarResultados() {
                     nombre: p.Nombre || p.NOMBRE || '',
                     categoria: categoria,
                     tiempoSegundos: tiempoASegundos(valorTiempo),
-                    tiempo: segundosATiempo(tiempoASegundos(valorTiempo)),
+                    tiempo: valorTiempo,
                     totalSegundos: totalAcumulado,
                     tieneDNF: tieneDNF
                 };
