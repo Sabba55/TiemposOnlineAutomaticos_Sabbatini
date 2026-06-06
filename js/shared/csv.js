@@ -191,6 +191,40 @@ window.UtilidadesCSV = (function () {
         return `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${String(anio).padStart(4, '0')}`;
     }
 
+    function normalizarFechasComparacion(valor) {
+        if (valor === undefined || valor === null) return [];
+
+        const texto = String(valor).trim();
+        if (!texto) return [];
+
+        const fechas = new Set();
+        const coincidencias = texto.match(/\d{1,4}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/g) || [];
+
+        if (coincidencias.length > 0) {
+            coincidencias.forEach(coincidencia => {
+                const normalizada = normalizarFechaComparacion(coincidencia);
+                if (normalizada) fechas.add(normalizada);
+            });
+            return [...fechas];
+        }
+
+        texto
+            .split(/[\n,;|]+/)
+            .map(fragmento => fragmento.trim())
+            .filter(Boolean)
+            .forEach(fragmento => {
+                const normalizada = normalizarFechaComparacion(fragmento);
+                if (normalizada) fechas.add(normalizada);
+            });
+
+        if (fechas.size > 0) {
+            return [...fechas];
+        }
+
+        const normalizada = normalizarFechaComparacion(texto);
+        return normalizada ? [normalizada] : [];
+    }
+
     function construirIndiceInscriptos(inscriptos) {
         return inscriptos
             .map(inscripto => ({
@@ -354,7 +388,7 @@ window.UtilidadesCSV = (function () {
 
     function fusionarPilotosConInscriptos(pilotos, inscriptos, fechaRally = '') {
         const indice = construirIndiceInscriptos(inscriptos);
-        const fechaRallyNormalizada = normalizarFechaComparacion(fechaRally);
+        const fechasRallyNormalizadas = new Set(normalizarFechasComparacion(fechaRally));
 
         return pilotos
             .map(piloto => {
@@ -364,13 +398,67 @@ window.UtilidadesCSV = (function () {
                 if (!inscripto) return null;
 
                 const fechaPiloto = obtenerPrimerValor(piloto, ['Fecha', 'FECHA', 'fecha']);
-                if (fechaRallyNormalizada && normalizarFechaComparacion(fechaPiloto) !== fechaRallyNormalizada) {
+                const fechaPilotoNormalizada = normalizarFechaComparacion(fechaPiloto);
+                if (fechasRallyNormalizadas.size > 0 && !fechasRallyNormalizadas.has(fechaPilotoNormalizada)) {
                     return null;
                 }
 
                 const nombreMostrado = inscripto.nombre || nombrePiloto;
                 const vehiculo = inscripto.vehiculo || obtenerPrimerValor(piloto, ['Vehiculo', 'VEHICULO', 'vehiculo']);
                 const categoria = inscripto.categoria || obtenerPrimerValor(piloto, ['Categoria', 'CATEGORIA']);
+
+                return {
+                    ...piloto,
+                    nombre: nombreMostrado,
+                    Nombre: nombreMostrado,
+                    NOMBRE: nombreMostrado,
+                    Piloto: nombreMostrado,
+                    PILOTO: nombreMostrado,
+                    vehiculo: vehiculo,
+                    Vehiculo: vehiculo,
+                    VEHICULO: vehiculo,
+                    categoria: categoria,
+                    Categoria: categoria,
+                    CATEGORIA: categoria,
+                    fecha: fechaPiloto,
+                    Fecha: fechaPiloto,
+                    FECHA: fechaPiloto,
+                };
+            })
+            .filter(Boolean);
+    }
+
+    function fusionarPilotosConInscriptosYCategoria(pilotos, inscriptos, fechaRally = '') {
+        const indice = construirIndiceInscriptos(inscriptos);
+        const fechasRallyNormalizadas = new Set(normalizarFechasComparacion(fechaRally));
+
+        return pilotos
+            .map(piloto => {
+                const nombrePiloto = obtenerPrimerValor(piloto, ['Nombre', 'NOMBRE', 'Piloto', 'PILOTO']);
+                const inscripto = encontrarCoincidenciaNombre(nombrePiloto, indice);
+
+                if (!inscripto) return null;
+
+                const fechaPiloto = obtenerPrimerValor(piloto, ['Fecha', 'FECHA', 'fecha']);
+                const fechaPilotoNormalizada = normalizarFechaComparacion(fechaPiloto);
+                if (fechasRallyNormalizadas.size > 0 && !fechasRallyNormalizadas.has(fechaPilotoNormalizada)) {
+                    return null;
+                }
+
+                const categoriaFuente = obtenerPrimerValor(piloto, ['Categoria', 'CATEGORIA']);
+                const categoriaIncripto = inscripto.categoria || '';
+
+                if (
+                    categoriaFuente &&
+                    categoriaIncripto &&
+                    normalizarTextoComparacion(categoriaFuente) !== normalizarTextoComparacion(categoriaIncripto)
+                ) {
+                    return null;
+                }
+
+                const nombreMostrado = inscripto.nombre || nombrePiloto;
+                const vehiculo = inscripto.vehiculo || obtenerPrimerValor(piloto, ['Vehiculo', 'VEHICULO', 'vehiculo']);
+                const categoria = categoriaIncripto || categoriaFuente;
 
                 return {
                     ...piloto,
@@ -442,7 +530,9 @@ window.UtilidadesCSV = (function () {
         normalizarNombreComponentes,
         obtenerClavesNombre,
         normalizarFechaComparacion,
+        normalizarFechasComparacion,
         obtenerPrimerValor,
-        fusionarPilotosConInscriptos
+        fusionarPilotosConInscriptos,
+        fusionarPilotosConInscriptosYCategoria
     };
 })();

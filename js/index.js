@@ -3,7 +3,7 @@ const PILOTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR7
 const RALLY_NAME_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 const HORARIOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=2144629647&single=true&output=csv';
-const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechaComparacion } = window.UtilidadesCSV;
+const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
 const { esDNF, tiempoASegundos, segundosATiempo: formatearSegundos, obtenerTiempoEtapa, obtenerClavesTiempo } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 
@@ -11,7 +11,7 @@ let tramosData = [];
 let pilotosData = [];
 let inscriptosData = [];
 let horariosData = [];
-let fechaRallyActiva = '';
+let fechaRallyActiva = [];
 
 async function cargarNombreRally() {
     try {
@@ -25,7 +25,7 @@ async function cargarNombreRally() {
             document.title = nombreRally;
         }
 
-        fechaRallyActiva = normalizarFechaComparacion(data[0]?.Fecha || data[0]?.FECHA || data[0]?.fecha || '');
+        fechaRallyActiva = normalizarFechasComparacion(data[0]?.Fecha || data[0]?.FECHA || data[0]?.fecha || '');
     } catch (error) {
         console.error('Error al cargar el nombre del rally:', error);
     }
@@ -55,6 +55,20 @@ function contarRepeticionesTramo(desdeHasta, indiceActual) {
         }
     }
     return contador;
+}
+
+function esFilaShakedownTramo(tramo) {
+    if (!tramo) return false;
+
+    const pe = String(tramo.PE || '').trim();
+    const desde = String(tramo.Desde || '').trim();
+    const hasta = String(tramo.Hasta || '').trim();
+
+    return pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+}
+
+function obtenerTramosCarrera() {
+    return tramosData.filter(tramo => !esFilaShakedownTramo(tramo));
 }
 
 function numeroARomano(num) {
@@ -115,6 +129,7 @@ function obtenerHorarioMasTemplanoPE(peNumber) {
 
 function obtenerPowerStagePE() {
     const pes = tramosData
+        .filter(t => !esFilaShakedownTramo(t))
         .filter(t => (t['Power Stage'] || '').trim().toLowerCase() === 'si')
         .map(t => t.PE);
 
@@ -122,13 +137,27 @@ function obtenerPowerStagePE() {
     return null; // 0 o 2+ → se ignora
 }
 
+function esFilaShakedownTramo(tramo) {
+    if (!tramo) return false;
+
+    const pe = String(tramo.PE || '').trim();
+    const desde = String(tramo.Desde || '').trim();
+    const hasta = String(tramo.Hasta || '').trim();
+
+    return pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+}
+
+function obtenerTramosCarrera() {
+    return tramosData.filter(tramo => !esFilaShakedownTramo(tramo));
+}
+
 function validarConsistenciaDatos() {
-    const numeroPEs = tramosData.length;
+    const numeroPEs = obtenerTramosCarrera().length;
     
     if (pilotosData.length === 0) {
-        return { valido: false, mensaje: 'No hay datos de pilotos' };
+        return { valido: true };
     }
-    
+
     const primeraFila = pilotosData[0];
     const columnasTiempo = obtenerClavesTiempo(primeraFila);
     const numeroSS = columnasTiempo.length;
@@ -164,7 +193,7 @@ async function cargarDatos() {
         const horariosText = await horariosResponse.text();
         
         const rallyData = analizarCSV(rallyText);
-        fechaRallyActiva = normalizarFechaComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
+        fechaRallyActiva = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         if (rallyData.length > 0 && rallyData[0].Nombre && rallyData[0].Nombre.trim() !== '') {
             const nombreRally = rallyData[0].Nombre.trim();
             document.getElementById('rallyName').textContent = nombreRally;
@@ -212,7 +241,7 @@ function renderizarMenu() {
         <table>
             <thead>
                 <tr>
-                    <th>PE</th>
+                    <th class="col-pe">PE</th>
                     <th>Desde - Hasta</th>
                     <th>KMS</th>
                     <th>Hora</th>
@@ -227,9 +256,12 @@ function renderizarMenu() {
         const pe = tramo.PE || '';
         const desde = tramo.Desde || '';
         const hasta = tramo.Hasta || '';
+        const esShakedown = esFilaShakedownTramo(tramo);
         
         let desdeHasta = '';
-        if (desde && hasta) {
+        if (esShakedown) {
+            desdeHasta = 'Shakedown';
+        } else if (desde && hasta) {
             const desdeCapitalizado = capitalizarTexto(desde);
             const hastaCapitalizado = capitalizarTexto(hasta);
             const textoBase = `${desdeCapitalizado} - ${hastaCapitalizado}`;
@@ -239,8 +271,8 @@ function renderizarMenu() {
         }
         
         const kms = tramo.KMS || '';
-        const hora = obtenerHorarioMasTemplanoPE(pe);
-        const ganador = obtenerGanadorPE(pe);
+        const hora = esShakedown ? '-' : obtenerHorarioMasTemplanoPE(pe);
+        const ganador = esShakedown ? null : obtenerGanadorPE(pe);
         const esPS = pe === powerStagePE;
         
         let ganadorHTML = '-';
@@ -255,7 +287,7 @@ function renderizarMenu() {
 
         html += `
             <tr>
-                <td>
+                <td class="col-pe">
                     <span class="pe-number ${esPS ? 'pe-power-stage' : ''}">
                         ${pe}
                     </span>
@@ -268,12 +300,19 @@ function renderizarMenu() {
                 <td>${hora}</td>
                 <td>
                     <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button class="btn-clases" onclick="verGeneral('${pe}')">
-                            General
-                        </button>
-                        <button class="btn-clases" onclick="verClases('${pe}')">
-                            Por Clases
-                        </button>
+                        ${esShakedown
+                            ? `<button class="btn-clases btn-shakedown" onclick="window.location.href='pages/shakedown.html'">
+                                    Shakedown
+                               </button>`
+                            : `
+                                <button class="btn-clases" onclick="verGeneral('${pe}')">
+                                    General
+                                </button>
+                                <button class="btn-clases" onclick="verClases('${pe}')">
+                                    Por Clases
+                                </button>
+                              `
+                        }
                     </div>
                 </td>
                 <td class="ganador-cell">${ganadorHTML}</td>
@@ -292,7 +331,7 @@ function renderizarMenu() {
 }
 
 function verificarPEsCompletas() {
-    const totalPEs = tramosData.length;
+    const totalPEs = obtenerTramosCarrera().length;
     
     const categorias = [...new Set(pilotosData.map(p => p.Categoria || p.CATEGORIA))].filter(c => c);
     
@@ -441,7 +480,7 @@ function renderizarGanadoresFinales() {
         return;
     }
     
-    const totalPEs = tramosData.length;
+    const totalPEs = obtenerTramosCarrera().length;
     const categorias = [...new Set(pilotosData.map(p => p.Categoria || p.CATEGORIA))].filter(c => c);
     const categoriaOrdenadas = [...categorias].sort((a, b) => {
         const prioridades = { 'RC2': 0, 'RALLY2': 0, 'RCMR': 1 };

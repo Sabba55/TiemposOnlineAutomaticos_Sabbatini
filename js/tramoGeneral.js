@@ -2,7 +2,7 @@ const PILOTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR7
 const TRAMOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=289895386&single=true&output=csv';
 const RALLY_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
-const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechaComparacion } = window.UtilidadesCSV;
+const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
 const { esDNF, tiempoASegundos, segundosATiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 
@@ -23,7 +23,14 @@ function analizarPilotosCSV(csv) {
 
 function analizarTramosCSV(csv) {
     return analizarCSV(csv, {
-        filtrarFila: fila => Boolean(fila.PE && fila.PE !== '')
+        filtrarFila: fila => {
+            const pe = String(fila.PE || '').trim();
+            const desde = String(fila.Desde || '').trim();
+            const hasta = String(fila.Hasta || '').trim();
+            const esShakedown = pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+
+            return Boolean(pe && pe !== '' && !esShakedown);
+        }
     });
 }
 
@@ -194,7 +201,7 @@ async function cargarDatos() {
         const inscriptosText = await inscriptosResponse.text();
 
         const rallyData = analizarCSV(rallyText);
-        const fechaRally = normalizarFechaComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
+        const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         const pilotosBase = analizarPilotosCSV(pilotosText);
         const inscriptosData = analizarCSV(inscriptosText);
         pilotosData = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);

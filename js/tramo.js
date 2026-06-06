@@ -2,7 +2,7 @@ const URL_PILOTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR7
 const URL_TRAMOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=289895386&single=true&output=csv';
 const URL_RALLY = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
-const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechaComparacion } = window.UtilidadesCSV;
+const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
 const { esDNF, tiempoASegundos: convertirASegundos, segundosATiempo: convertirATiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
@@ -24,7 +24,14 @@ function analizarCSV(csv) {
 
 function analizarTramosCSV(csv) {
     return analizarCSVBase(csv, {
-        filtrarFila: fila => Boolean(fila.PE && fila.PE !== '')
+        filtrarFila: fila => {
+            const pe = String(fila.PE || '').trim();
+            const desde = String(fila.Desde || '').trim();
+            const hasta = String(fila.Hasta || '').trim();
+            const esShakedown = pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+
+            return Boolean(pe && pe !== '' && !esShakedown);
+        }
     });
 }
 
@@ -103,7 +110,7 @@ async function cargarDatos() {
         const textoInscriptos = await respuestaInscriptos.text();
 
         const rallyData = analizarCSVBase(textoRally);
-        const fechaRally = normalizarFechaComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
+        const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         const pilotosBase = analizarCSV(textoPilotos);
         const inscriptosData = analizarCSVBase(textoInscriptos);
         datosPilotos = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);

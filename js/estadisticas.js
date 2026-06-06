@@ -4,7 +4,7 @@ const URL_RALLY = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzc
 
 const URL_INSCRIPTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 
-const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechaComparacion } = window.UtilidadesCSV;
+const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
 const { esDNF, tiempoASegundos, segundosATiempo } = window.UtilidadesTiempo;
 const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
 
@@ -63,7 +63,14 @@ function analizarPilotosCSV(csv) {
 
 function analizarTramosCSV(csv) {
     return analizarCSVBase(csv, {
-        filtrarFila: fila => Boolean(fila.PE && fila.PE !== '')
+        filtrarFila: fila => {
+            const pe = String(fila.PE || '').trim();
+            const desde = String(fila.Desde || '').trim();
+            const hasta = String(fila.Hasta || '').trim();
+            const esShakedown = pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+
+            return Boolean(pe && pe !== '' && !esShakedown);
+        }
     });
 }
 
@@ -1162,7 +1169,7 @@ async function cargarDatos() {
         const rallyData = analizarCSVBase(await respRally.text());
         const pilotosBase = analizarPilotosCSV(await respPilotos.text());
         const inscriptosData = analizarCSVBase(await respInscriptos.text());
-        const fechaRally = normalizarFechaComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
+        const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         datosPilotos = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);
         datosTramos  = analizarTramosCSV(await respTramos.text());
 

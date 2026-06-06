@@ -168,6 +168,12 @@ th:last-child {
     border-right: none;
 }
 
+.col-pe {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+}
+
 td {
     padding: 16px 12px;
     text-align: center;
@@ -219,6 +225,18 @@ tbody tr:hover {
 
 .btn-clases:active {
     transform: translateY(0);
+}
+
+.btn-shakedown {
+    background: linear-gradient(135deg, #1b263bd2 0%, var(--color-grafito-700) 100%);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(30, 64, 175, 0.18);
+}
+
+.btn-shakedown:hover {
+    background: linear-gradient(135deg, #161f30e7 0%, var(--color-grafito-700) 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(30, 64, 175, 0.22);
 }
 
 .btn-clases-header {
