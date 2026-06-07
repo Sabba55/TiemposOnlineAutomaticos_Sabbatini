@@ -45,12 +45,16 @@
 
 .shakedown-table-wrapper th:nth-child(2),
 .shakedown-table-wrapper td:nth-child(2) {
-    width: 21%;
+    width: 22%;
+}
+
+.shakedown-table-wrapper tbody td:nth-child(2) {
+    font-weight: 600;
 }
 
 .shakedown-table-wrapper th:nth-child(3),
 .shakedown-table-wrapper td:nth-child(3) {
-    width: 21%;
+    width: 20%;
 }
 
 .shakedown-table-wrapper th:nth-child(4),
@@ -75,7 +79,7 @@
 }
 
 .shakedown-vuelta--mejor {
-    background: #e0d0ff !important;
+    background: #e4d4ff !important;
     color: #6d28d9 !important;
     font-weight: 700 !important;
 }
@@ -94,18 +98,7 @@
     font-weight: 700;
 }
 
-.shakedown-table-wrapper th:nth-child(4),
-.shakedown-table-wrapper th:nth-child(5),
-.shakedown-table-wrapper th:nth-child(6),
-.shakedown-table-wrapper th:nth-child(7),
-.shakedown-table-wrapper td:nth-child(4),
-.shakedown-table-wrapper td:nth-child(5),
-.shakedown-table-wrapper td:nth-child(6),
-.shakedown-table-wrapper td:nth-child(7) 
 
-.shakedown-table-wrapper tr:hover td {
-    background-color: #ece5ff !important;
-}
 
 .shakedown-table-wrapper tr.pos-1:hover td:first-child {
     background: #ffab1a !important;
@@ -113,17 +106,17 @@
 }
 
 .shakedown-table-wrapper tr:hover td.shakedown-vuelta--mejor {
-    background: #d8c2ff !important;
+    background: #dac3ff !important;
     color: #6d28d9 !important;
 }
 
 .shakedown-table-wrapper tr.pos-1 td.shakedown-vuelta--mejor {
-    background: #e0d0ff !important;
+    background: #e4d4ff !important;
     color: #6d28d9 !important;
 }
 
 .shakedown-table-wrapper tr.pos-1:hover td.shakedown-vuelta--mejor {
-    background: #d8c2ff !important;
+    background: #dac3ff !important;
     color: #6d28d9 !important;
 }
 
