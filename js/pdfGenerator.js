@@ -48,6 +48,20 @@
   const { tiempoASegundos, esDNF, obtenerTiempoEtapa } = window.UtilidadesTiempo;
   const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 
+  function esFilaShakedownTramo(tramo) {
+    if (!tramo) return false;
+
+    const pe = String(tramo.PE || '').trim();
+    const desde = String(tramo.Desde || '').trim();
+    const hasta = String(tramo.Hasta || '').trim();
+
+    return pe === '0' && /shakedown/i.test(desde) && (!hasta || /shakedown/i.test(hasta));
+  }
+
+  function obtenerTramosCarrera() {
+    return tramosData.filter(tramo => !esFilaShakedownTramo(tramo));
+  }
+
   function segundosATiempoConDecimales(segundos, decimales) {
     if (!segundos || segundos >= 999999) return '-';
     const h   = Math.floor(segundos / 3600);
@@ -88,7 +102,8 @@
 
   // ─── CÁLCULO DE CLASIFICACIÓN ────────────────────────────────────────────────
   function calcularClasifPorCategorias() {
-    const totalPEs = tramosData.length;
+    const tramosCarrera = obtenerTramosCarrera();
+    const totalPEs = tramosCarrera.length;
     const pilotos  = window.pilotosData;
 
     const peoresPorTramoYCategoria = {};
@@ -142,7 +157,7 @@
           const totalConPenal   = totalSegundos + penalizSegundos;
 
           let distanciaTotal = 0;
-          tramosData.forEach(t => {
+          tramosCarrera.forEach(t => {
             if (t.KMS) {
               const d = parseFloat(t.KMS);
               if (!isNaN(d)) distanciaTotal += d;
