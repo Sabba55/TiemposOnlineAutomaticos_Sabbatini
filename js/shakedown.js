@@ -145,7 +145,6 @@ function renderizarShakedown() {
                     mejorIndices: vueltas
                         .map((valor, indice) => ({
                             indice,
-                            tiempo: valor,
                             segundos: esTiempoNoTerminado(valor) ? 999999 : tiempoASegundos(valor)
                         }))
                         .filter(item => item.segundos === mejorVuelta && mejorVuelta < 999999)
@@ -169,11 +168,12 @@ function renderizarShakedown() {
                                 <tr>
                                     <th class="col-pos">Pos</th>
                                     <th>Piloto</th>
-                                    <th>Vehiculo</th>
+                                    <th>Marca</th>
                                     <th>Vuelta 1</th>
                                     <th>Vuelta 2</th>
                                     <th>Vuelta 3</th>
                                     <th>Vuelta 4</th>
+                                    <th class="col-mejor">Mejor Vta.</th>
                                     <th class="col-dif">Dif. 1&ordm;</th>
                                     <th class="col-dif">Dif. Ant.</th>
                                 </tr>
@@ -193,7 +193,7 @@ function renderizarShakedown() {
             const vueltas = piloto.vueltas || [];
             const mejorVueltaIndices = new Set(piloto.mejorIndices || []);
             const celdaVuelta = (valor, numero) => {
-                const claseMejor = mejorVueltaIndices.has(numero - 1) ? 'shakedown-vuelta--mejor' : '';
+                const claseMejor = mejorVueltaIndices.has(numero - 1) ? 'shakedown-vuelta--rapida' : '';
                 return `<td class="${claseMejor}">${formatearVueltaShakedown(valor)}</td>`;
             };
 
@@ -201,20 +201,20 @@ function renderizarShakedown() {
                 <tr class="${claseFila}">
                     <td class="col-pos"><strong>${indice + 1}</strong></td>
                     <td>${piloto.nombre}</td>
-                    <td class="shakedown-vehiculo-cell">
-                        <div class="shakedown-vehiculo">
+                    <td class="shakedown-marca-cell">
+                        <div class="shakedown-marca">
                             ${rutaLogo
-                                ? `<img class="shakedown-vehiculo-logo" src="${rutaLogo}" alt="${marca}"
+                                ? `<img class="shakedown-marca-logo" src="${rutaLogo}" alt="${marca}"
                                     onerror="this.onerror=null; this.remove()">`
-                                : ''
+                                : '<span class="shakedown-marca-sin-logo">-</span>'
                             }
-                            <span class="shakedown-vehiculo-texto">${piloto.vehiculo || marca}</span>
                         </div>
                     </td>
                     ${celdaVuelta(vueltas[0], 1)}
                     ${celdaVuelta(vueltas[1], 2)}
                     ${celdaVuelta(vueltas[2], 3)}
                     ${celdaVuelta(vueltas[3], 4)}
+                    <td class="shakedown-vuelta--mejor">${piloto.mejorVueltaTexto}</td>
                     <td class="col-dif">${dif1 === null ? '-' : formatearDiferencia(dif1)}</td>
                     <td class="col-dif">${difAnt === null ? '-' : formatearDiferencia(difAnt)}</td>
                 </tr>

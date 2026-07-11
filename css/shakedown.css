@@ -45,7 +45,7 @@
 
 .shakedown-table-wrapper th:nth-child(2),
 .shakedown-table-wrapper td:nth-child(2) {
-    width: 22%;
+    width: 21%;
 }
 
 .shakedown-table-wrapper tbody td:nth-child(2) {
@@ -54,7 +54,7 @@
 
 .shakedown-table-wrapper th:nth-child(3),
 .shakedown-table-wrapper td:nth-child(3) {
-    width: 20%;
+    width: 10%;
 }
 
 .shakedown-table-wrapper th:nth-child(4),
@@ -63,19 +63,24 @@
 .shakedown-table-wrapper td:nth-child(4),
 .shakedown-table-wrapper td:nth-child(5),
 .shakedown-table-wrapper td:nth-child(6) {
-    width: 10%;
+    width: 9%;
 }
 
 .shakedown-table-wrapper th:nth-child(7),
 .shakedown-table-wrapper td:nth-child(7) {
+    width: 9%;
+}
+
+.shakedown-table-wrapper th.col-mejor,
+.shakedown-table-wrapper td:nth-child(8) {
     width: 10%;
 }
 
-.shakedown-table-wrapper th:nth-child(8),
-.shakedown-table-wrapper td:nth-child(8),
 .shakedown-table-wrapper th:nth-child(9),
-.shakedown-table-wrapper td:nth-child(9) {
-    width: 6%;
+.shakedown-table-wrapper td:nth-child(9),
+.shakedown-table-wrapper th:nth-child(10),
+.shakedown-table-wrapper td:nth-child(10) {
+    width: 7%;
 }
 
 .shakedown-vuelta--mejor {
@@ -84,8 +89,16 @@
     font-weight: 700 !important;
 }
 
+.shakedown-vuelta--rapida {
+    background: #d9f7e6 !important;
+    color: #008645 !important;
+    font-weight: 800 !important;
+}
+
 .shakedown-mejor-col {
+    background: #e4d4ff !important;
     color: #6d28d9 !important;
+    font-weight: 700 !important;
 }
 
 .shakedown-vuelta-nt {
@@ -95,7 +108,7 @@
 
 .shakedown-vuelta-tiempo {
     color: inherit;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 
@@ -110,6 +123,21 @@
     color: #6d28d9 !important;
 }
 
+.shakedown-table-wrapper tr:hover td.shakedown-vuelta--rapida {
+    background: #c9efd9 !important;
+    color: #008645 !important;
+}
+
+.shakedown-table-wrapper tr.pos-1 td.shakedown-vuelta--rapida {
+    background: #d9f7e6 !important;
+    color: #008645 !important;
+}
+
+.shakedown-table-wrapper tr.pos-1:hover td.shakedown-vuelta--rapida {
+    background: #c9efd9 !important;
+    color: #008645 !important;
+}
+
 .shakedown-table-wrapper tr.pos-1 td.shakedown-vuelta--mejor {
     background: #e4d4ff !important;
     color: #6d28d9 !important;
@@ -120,11 +148,11 @@
     color: #6d28d9 !important;
 }
 
-.shakedown-vehiculo-cell {
+.shakedown-marca-cell {
     text-align: center;
 }
 
-.shakedown-vehiculo {
+.shakedown-marca {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -132,17 +160,16 @@
     max-width: 100%;
 }
 
-.shakedown-vehiculo-logo {
+.shakedown-marca-logo {
     height: 20px;
     width: auto;
     object-fit: contain;
     flex-shrink: 0;
 }
 
-.shakedown-vehiculo-texto {
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.shakedown-marca-sin-logo {
+    font-weight: 700;
+    color: var(--color-texto-suave);
 }
 
 .shakedown-notice {
