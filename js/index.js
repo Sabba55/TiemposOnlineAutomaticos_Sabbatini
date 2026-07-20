@@ -321,6 +321,27 @@ function renderizarMenu() {
     });
 
     html += `
+        <tr class="fila-clasificacion-final">
+            <td class="col-pe">
+
+            </td>
+            <td class="clasificacion-final-label">
+                CLASIFICACION FINAL
+            </td>
+            <td></td>
+            <td></td>
+            <td class="clasificacion-final-actions">
+                <div class="clasificacion-final-actions-inner">
+                    <button class="btn-clases btn-clasificacion-final" onclick="verClasificacionFinal()">
+                        CLASIFICACION FINAL
+                    </button>
+                </div>
+            </td>
+            <td></td>
+        </tr>
+    `;
+
+    html += `
             </tbody>
         </table>
     `;
@@ -541,6 +562,10 @@ function verClases(pe) {
 
 function verGeneral(pe) {
     window.location.href = `pages/tramoGeneral.html?pe=${pe}`;
+}
+
+function verClasificacionFinal() {
+    window.location.href = 'pages/clasificacionFinal.html';
 }
 
 function actualizarUltimaActualizacion() {

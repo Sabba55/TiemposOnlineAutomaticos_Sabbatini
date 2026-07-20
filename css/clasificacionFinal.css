@@ -1,0 +1,172 @@
+.clasificacion-final-page .clasificacion-final-container {
+    max-width: 1200px;
+}
+
+.clasificacion-final-topbar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.clasificacion-final-topbar .btn-back {
+    text-decoration: none;
+}
+
+.btn-clasificacion-final-pdf {
+    width: auto;
+    min-width: 170px;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
+.clasificacion-final-header-block {
+    width: 100%;
+    margin-top: 0;
+}
+
+.clasificacion-final-header {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.clasificacion-final-title {
+    font-family: 'Orbitron', serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-azul-principal);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.clasificacion-final-page .pe-categorias-nav {
+    margin-top: 12px;
+}
+
+.clasificacion-final-page .categoria-completa {
+    margin-bottom: 3rem;
+}
+
+.clasificacion-final-page .categoria-titulo {
+    font-size: 20px;
+}
+
+.clasificacion-final-page .tabla-general-container {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+.clasificacion-final-page .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.clasificacion-final-page table {
+    min-width: 1100px;
+}
+
+.clasificacion-final-page th.col-pos,
+.clasificacion-final-page td.col-pos {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.clasificacion-final-page .col-piloto {
+    min-width: 220px;
+}
+
+.clasificacion-final-page .col-vehiculo {
+    min-width: 220px;
+}
+
+.vehiculo-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.vehiculo-logo {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.vehiculo-texto {
+    display: inline-block;
+    text-align: left;
+}
+
+.clasificacion-final-page .col-tiempo,
+.clasificacion-final-page .col-penal,
+.clasificacion-final-page .col-total,
+.clasificacion-final-page .col-dif,
+.clasificacion-final-page .col-prom {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.clasificacion-final-page .col-piloto {
+    min-width: 240px;
+}
+
+.clasificacion-final-page .col-vehiculo {
+    min-width: 220px;
+}
+
+.clasificacion-final-page .col-tiempo {
+    min-width: 120px;
+}
+
+.clasificacion-final-page .col-penal {
+    min-width: 100px;
+}
+
+.clasificacion-final-page .col-total {
+    min-width: 120px;
+}
+
+.clasificacion-final-page .col-dif {
+    min-width: 95px;
+}
+
+.clasificacion-final-page .col-prom {
+    min-width: 80px;
+}
+
+.clasificacion-final-page .pos-1 td:first-child {
+    background: #ffab1a !important;
+    color: var(--color-texto-claro);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.clasificacion-final-page .pos-1 td:not(:first-child) {
+    background-color: #e7edf5 !important;
+}
+
+.clasificacion-final-page .fila-poder td:nth-child(5) {
+    color: #4c1d95;
+    font-weight: 700;
+}
+
+.clasificacion-final-page .total-puntos {
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .clasificacion-final-topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-clasificacion-final-pdf {
+        width: 100%;
+    }
+}

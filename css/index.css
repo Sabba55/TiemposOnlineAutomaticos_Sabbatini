@@ -302,6 +302,64 @@ tbody tr:hover {
     color: var(--color-ganador);
 }
 
+.fila-clasificacion-final {
+    background: linear-gradient(135deg, var(--color-azul-principal) 0%, var(--color-grafito-800) 100%);
+}
+
+.fila-clasificacion-final td {
+    background: transparent;
+    color: var(--color-texto-claro);
+    border-top: 2px solid rgba(255, 255, 255, 0.12);
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fila-clasificacion-final td:last-child {
+    border-right: none;
+}
+
+.fila-clasificacion-final td:nth-child(2) {
+    text-align: left;
+    font-family: 'Orbitron', serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+}
+
+.clasificacion-final-actions {
+    padding: 8px 10px;
+}
+
+.clasificacion-final-actions-inner {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-clasificacion-final {
+    background: linear-gradient(135deg, #2a3345 0%, #1e293b 100%);
+    color: var(--color-texto-claro);
+    border: 2px solid rgba(253, 253, 253, 0.842);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.3);
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: auto;
+    min-width: 190px;
+    padding: 11px 14px;
+}
+
+.btn-clasificacion-final:hover {
+    background: linear-gradient(135deg, #334155 0%, #273449 100%);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.38);
+}
+
+.pe-final {
+    background: linear-gradient(135deg, #374151 0%, #111827 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Orbitron', serif;
+    min-width: 38px;
+}
+
 .ganador-tiempo {
     font-size: 12px;
     font-weight: 700;
