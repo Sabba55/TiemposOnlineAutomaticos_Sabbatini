@@ -143,7 +143,7 @@ function renderizarEstadisticasGenerales() {
     const contenedor = document.getElementById('content');
 
     const kms                = calcularKmsTotales(datosTramos);
-    const resumen            = calcularResumenGeneral(datosPilotos, datosTramos);
+    const resumen            = calcularResumenGeneral(datosPilotos, datosTramos, window.inscriptosData || []);
     const tramoRapido        = calcularTramoMasRapidoGeneral(datosPilotos, datosTramos);
     const tramoDisputado     = calcularTramoMasDisputadoGeneral(datosPilotos, datosTramos);
     const mayorSancion       = calcularPilotoMayoresSanciones(datosPilotos, datosTramos);
@@ -234,7 +234,7 @@ function renderizarEstadisticasGenerales() {
 // ── Render: resumen ───────────────────────────────────────────────────────────
 
 function renderizarResumen(categoria, porcentajeSinDNF) {
-    const totalInscriptos = calcularTotalInscriptos(categoria, datosPilotos);
+    const totalInscriptos = calcularTotalInscriptos(categoria, datosPilotos, window.inscriptosData || []);
     const largaron        = calcularInscriptos(categoria, datosPilotos, datosTramos);
     const dnfs            = calcularDNFs(categoria, datosPilotos, datosTramos);
 
@@ -1172,6 +1172,7 @@ async function cargarDatos() {
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         datosPilotos = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);
         datosTramos  = analizarTramosCSV(await respTramos.text());
+        window.inscriptosData = inscriptosData;
 
         const categorias = obtenerCategoriasConTiempos(datosPilotos, datosTramos);
         renderizarBotonesCategorias(categorias);

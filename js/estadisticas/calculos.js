@@ -116,8 +116,9 @@ window.UtilidadesCalculos = (function () {
 
     // ── Resumen ───────────────────────────────────────────────────────────────
 
-    function calcularTotalInscriptos(categoria, pilotos) {
-        return pilotos.filter(p => (p.Categoria || p.CATEGORIA) === categoria).length;
+    function calcularTotalInscriptos(categoria, pilotos, inscriptos = []) {
+        const fuente = Array.isArray(inscriptos) && inscriptos.length > 0 ? inscriptos : pilotos;
+        return fuente.filter(p => (p.Categoria || p.CATEGORIA) === categoria).length;
     }
 
     function calcularInscriptos(categoria, pilotos, tramos) {
@@ -570,7 +571,7 @@ window.UtilidadesCalculos = (function () {
         return total > 0 ? total.toFixed(2) : null;
     }
 
-    function calcularResumenGeneral(pilotos, tramos) {
+    function calcularResumenGeneral(pilotos, tramos, inscriptos = []) {
         const participaron = pilotos.filter(p =>
             tramos.some(t => {
                 const tiempo = p[`SS${t.PE}`];
@@ -578,7 +579,9 @@ window.UtilidadesCalculos = (function () {
             })
         );
 
-        const totalInscriptos = pilotos.length;
+        const totalInscriptos = Array.isArray(inscriptos) && inscriptos.length > 0
+            ? inscriptos.length
+            : pilotos.length;
         const largaron = participaron.length;
 
         const dnfs = participaron.filter(p =>
