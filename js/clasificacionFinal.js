@@ -93,6 +93,51 @@ function obtenerRutaLogo(vehiculo) {
     return obtenerRutaLogoMarca(vehiculo);
 }
 
+function calcularAbandonosCompetencia(pilotos, tramosCarrera, peoresPorTramoYCategoria, totalPEs) {
+    const abandonos = [];
+
+    pilotos.forEach(p => {
+        const categoria = p.Categoria || p.CATEGORIA || '';
+        let dnfsAcumulados = 0;
+        let peAbandono = null;
+
+        for (let i = 1; i <= totalPEs; i++) {
+            const tiempo = obtenerTiempoEtapa(p, i);
+
+            if (!tiempo || tiempo === '') {
+                peAbandono = null;
+                break;
+            }
+
+            if (esDNF(tiempo)) {
+                const peor = peoresPorTramoYCategoria[`${i}_${categoria}`] || 0;
+                if (!peor && peor !== 0) {
+                    peAbandono = null;
+                    break;
+                }
+
+                dnfsAcumulados++;
+                if (dnfsAcumulados === 3) {
+                    peAbandono = i;
+                    break;
+                }
+            }
+        }
+
+        if (peAbandono !== null) {
+            abandonos.push({
+                pe: peAbandono,
+                nombre: p.Nombre || p.NOMBRE || '',
+                vehiculo: p.Vehiculo || p.VEHICULO || p.vehiculo || '-',
+                categoria,
+            });
+        }
+    });
+
+    abandonos.sort((a, b) => a.pe - b.pe || a.nombre.localeCompare(b.nombre, 'es'));
+    return abandonos;
+}
+
 function calcularClasificacionFinalPorCategorias() {
     const pilotos = pilotosData;
     const tramosCarrera = obtenerTramosCarrera();
@@ -189,7 +234,9 @@ function calcularClasificacionFinalPorCategorias() {
         }
     });
 
-    return { resultado, categorias };
+    const abandonos = calcularAbandonosCompetencia(pilotos, tramosCarrera, peoresPorTramoYCategoria, totalPEs);
+
+    return { resultado, categorias, abandonos };
 }
 
 function renderizarBotonesCategorias(categorias) {
@@ -296,7 +343,43 @@ function renderizarResultados() {
         `;
     }).join('');
 
-    document.getElementById('content').innerHTML = html;
+    const abandonos = calculo.abandonos || [];
+    const htmlAbandonos = `
+        <div class="abandonos-container">
+            <div class="abandonos-header">
+                <span>${abandonos.length} ABANDONOS</span>
+            </div>
+            <div class="abandonos-body">
+                ${abandonos.length === 0 ? `
+                    <div class="abandonos-empty">No hay pilotos con 3 o mas DNF</div>
+                ` : abandonos.map(abandono => {
+                    const rutaLogo = obtenerRutaLogo(abandono.vehiculo);
+                    const marca = abandono.vehiculo ? abandono.vehiculo.split(' ')[0] : '-';
+
+                    return `
+                        <div class="abandono-row">
+                            <div class="abandono-pe">
+                                <span class="abandono-pe-badge">PE${abandono.pe}</span>
+                            </div>
+                            <div class="abandono-clase">${abandono.categoria}</div>
+                            <div class="abandono-nombre">${abandono.nombre}</div>
+                            <div class="abandono-vehiculo">
+                                <div class="vehiculo-cell vehiculo-cell--abandonos">
+                                    ${rutaLogo
+                                        ? `<img src="${rutaLogo}" alt="${marca}" class="vehiculo-logo" onerror="this.onerror=null; this.replaceWith(document.createTextNode('${marca}'))">`
+                                        : ''
+                                    }
+                                    <span class="vehiculo-texto">${abandono.vehiculo}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+
+    document.getElementById('content').innerHTML = html + htmlAbandonos;
 }
 
 function actualizarUltimaActualizacion() {

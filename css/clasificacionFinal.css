@@ -160,6 +160,121 @@
     font-weight: 700;
 }
 
+.abandonos-container {
+    margin-top: 12px;
+    max-width: 80%;    
+    margin-left: auto;
+    margin-right: auto;
+    background: var(--color-panel-brillo);
+    border: 1px solid var(--color-borde-suave);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+}
+
+.abandonos-header {
+    background: linear-gradient(135deg, var(--color-azul-principal) 0%, var(--color-grafito-800) 100%);
+    color: var(--color-texto-claro);
+    text-align: center;
+    padding: 14px 16px;
+    font-family: 'Orbitron', serif;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.abandonos-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.abandono-row {
+    display: grid;
+    grid-template-columns: 120px 200px minmax(240px, 1.2fr) minmax(280px, 1.5fr);
+    align-items: center;
+    min-height: 40px;
+    border-top: 1px solid var(--color-borde-suave);
+}
+
+.abandono-row:nth-child(odd) {
+    background: #f0f3f6;
+}
+
+.abandono-row:nth-child(even) {
+    background: var(--color-panel-brillo);
+}
+
+.abandono-row:hover {
+    background: #e9edf2;
+}
+
+.abandono-pe,
+.abandono-nombre,
+.abandono-vehiculo,
+.abandono-clase {
+    padding: 14px 16px;
+    text-align: center;
+    min-width: 0;
+}
+
+.abandono-pe {
+    font-family: 'Orbitron', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-azul-principal);
+}
+
+.abandono-pe-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 55px;
+    padding: 8px 6px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--color-azul-principal) 0%, var(--color-grafito-800) 100%);
+    color: var(--color-texto-claro);
+}
+
+.abandono-nombre {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-texto);
+}
+
+.abandono-clase {
+    font-family: 'Orbitron', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-azul-principal);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vehiculo-cell--abandonos {
+    justify-content: center;
+    font-size: 16px;
+    min-width: 0;
+    gap: 10px;
+    flex-wrap: nowrap;
+}
+
+.abandono-vehiculo {
+    min-width: 0;
+}
+
+.abandono-vehiculo .vehiculo-texto {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.abandonos-empty {
+    padding: 18px 16px;
+    text-align: center;
+    color: var(--color-texto-suave);
+    font-style: italic;
+}
+
 @media (max-width: 900px) {
     .clasificacion-final-topbar {
         flex-direction: column;
