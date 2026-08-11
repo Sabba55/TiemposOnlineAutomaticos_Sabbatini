@@ -11,6 +11,14 @@ window.UtilidadesIconos = (function () {
             return 'peugeotg1';
         }
 
+        if (vehiculoMinuscula.includes('peugeot') && vehiculoMinuscula.includes('206') && vehiculoMinuscula.includes('wrc')) {
+            return 'peugeotg1';
+        }
+
+        if (vehiculoMinuscula.includes('peugeot') && vehiculoMinuscula.includes('307') && vehiculoMinuscula.includes('wrc')) {
+            return 'peugeotg1';
+        }
+
         if (vehiculoMinuscula.includes('skoda') && vehiculoMinuscula.includes('rs')) {
             return 'skodars';
         }
