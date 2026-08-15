@@ -45,9 +45,10 @@ function pilotoSigueActivoEnPE(piloto, peActual) {
 
 function obtenerPrioridadCategoria(categoria) {
     const normalizada = (categoria || '').trim().toUpperCase();
-    if (normalizada === 'RC2' || normalizada === 'RALLY2') return 0;
-    if (normalizada === 'RCMR') return 1;
-    return 2;
+    if (normalizada === 'RC1' || normalizada === 'RALLY1') return 0;
+    if (normalizada === 'RC2' || normalizada === 'RALLY2') return 1;
+    if (normalizada === 'RCMR') return 2;
+    return 3;
 }
 
 function ordenarCategorias(categorias) {

@@ -1,47 +1,27 @@
 window.UtilidadesIconos = (function () {
+    const REGLAS_ICONOS = [
+        { keywords: ['fiat', 'regatta'], icono: 'fiatold' },
+        { keywords: ['peugeot', '208', 'g1'], icono: 'peugeotg1' },
+        { keywords: ['peugeot', '206', 'wrc'], icono: 'peugeotg1' },
+        { keywords: ['peugeot', '307', 'wrc'], icono: 'peugeotg1' },
+        { keywords: ['skoda', 'rs'], icono: 'skodars' },
+        { keywords: ['renault', '18'], icono: 'renaultold' },
+        { keywords: ['renault', 'clio', 's1600'], icono: 'renaultold' },
+        { keywords: ['ford', 'focus', 'wrc01'], icono: 'fordold' },
+        { keywords: ['ford', 'focus', 'wrc04'], icono: 'fordold' },
+        { keywords: ['ford', 'ka', 'tatoo'], icono: 'fordold' },
+    ];
+
     function obtenerMarcaVehiculo(vehiculo) {
         if (!vehiculo) return '';
 
         const vehiculoMinuscula = vehiculo.toLowerCase();
-        if (vehiculoMinuscula.includes('fiat') && vehiculoMinuscula.includes('regatta')) {
-            return 'fiatold';
-        }
 
-        if (vehiculoMinuscula.includes('peugeot') && vehiculoMinuscula.includes('208') && vehiculoMinuscula.includes('g1')) {
-            return 'peugeotg1';
-        }
+        const regla = REGLAS_ICONOS.find(({ keywords }) =>
+            keywords.every(keyword => vehiculoMinuscula.includes(keyword))
+        );
 
-        if (vehiculoMinuscula.includes('peugeot') && vehiculoMinuscula.includes('206') && vehiculoMinuscula.includes('wrc')) {
-            return 'peugeotg1';
-        }
-
-        if (vehiculoMinuscula.includes('peugeot') && vehiculoMinuscula.includes('307') && vehiculoMinuscula.includes('wrc')) {
-            return 'peugeotg1';
-        }
-
-        if (vehiculoMinuscula.includes('skoda') && vehiculoMinuscula.includes('rs')) {
-            return 'skodars';
-        }
-
-        if (vehiculoMinuscula.includes('renault') && vehiculoMinuscula.includes('18')) {
-            return 'renaultold';
-        }
-
-        if (vehiculoMinuscula.includes('renault') && vehiculoMinuscula.includes('clio') && vehiculoMinuscula.includes('s1600')) {
-            return 'renaultold';
-        }
-
-        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('focus') && vehiculoMinuscula.includes('wrc01')) {
-            return 'fordold';
-        }
-
-        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('focus') && vehiculoMinuscula.includes('wrc04')) {
-            return 'fordold';
-        }
-
-        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('ka') && vehiculoMinuscula.includes('tatoo')) {
-            return 'fordold';
-        }
+        if (regla) return regla.icono;
 
         return vehiculo.split(' ')[0].toLowerCase();
     }

@@ -50,15 +50,19 @@ function obtenerNombreTramo(tramoActual) {
 function obtenerPrioridadCategoria(categoria) {
     const categoriaNormalizada = (categoria || '').trim().toUpperCase();
 
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') {
+    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') {
         return 0;
     }
 
-    if (categoriaNormalizada === 'RCMR') {
+    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') {
         return 1;
     }
 
-    return 2;
+    if (categoriaNormalizada === 'RCMR') {
+        return 2;
+    }
+
+    return 3;
 }
 
 function obtenerColorCategoriaPredeterminado(categoria) {

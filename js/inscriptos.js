@@ -8,6 +8,11 @@ function normalizarCategoria(categoria) {
     return (categoria || '').trim();
 }
 
+function esCategoriaRC1(categoria) {
+    const categoriaNormalizada = normalizarCategoria(categoria).toUpperCase();
+    return categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1';
+}
+
 function esCategoriaRC2(categoria) {
     const categoriaNormalizada = normalizarCategoria(categoria).toUpperCase();
     return categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2';
@@ -31,9 +36,10 @@ function esCategoriaRC5(categoria) {
 }
 
 function obtenerPrioridadCategoria(categoria) {
-    if (esCategoriaRC2(categoria)) return 0;
-    if (esCategoriaRCMR(categoria)) return 1;
-    return 2;
+    if (esCategoriaRC1(categoria)) return 0;
+    if (esCategoriaRC2(categoria)) return 1;
+    if (esCategoriaRCMR(categoria)) return 2;
+    return 3;
 }
 
 function ordenarCategorias(categorias) {
@@ -50,13 +56,14 @@ function ordenarCategorias(categorias) {
 }
 
 function obtenerIndiceColorCategoria(categoria) {
+    if (esCategoriaRC1(categoria)) return 6;
     if (esCategoriaRC2(categoria)) return 1;
     if (esCategoriaRCMR(categoria)) return 2;
     if (esCategoriaRC4(categoria)) return 3;
     if (esCategoriaRC3OJunior(categoria)) return 4;
     if (esCategoriaRC5(categoria)) return 5;
 
-    const categoriasAlternativas = ['6', '7', '8'];
+    const categoriasAlternativas = ['7', '8'];
     const codigo = normalizarCategoria(categoria)
         .split('')
         .reduce((acumulado, letra) => acumulado + letra.charCodeAt(0), 0);
@@ -65,6 +72,7 @@ function obtenerIndiceColorCategoria(categoria) {
 }
 
 function obtenerColorPdfCategoria(categoria) {
+    if (esCategoriaRC1(categoria)) return [255, 200, 150];
     if (esCategoriaRC2(categoria)) return [252, 194, 194];
     if (esCategoriaRCMR(categoria)) return [255, 254, 195];
     if (esCategoriaRC4(categoria)) return [201, 222, 252];

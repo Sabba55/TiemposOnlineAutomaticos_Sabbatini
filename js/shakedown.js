@@ -87,9 +87,10 @@ function normalizarTextoTiempo(valor) {
 function obtenerPrioridadCategoria(categoria) {
     const categoriaNormalizada = (categoria || '').trim().toUpperCase();
 
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') return 0;
-    if (categoriaNormalizada === 'RCMR') return 1;
-    return 2;
+    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') return 0;
+    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') return 1;
+    if (categoriaNormalizada === 'RCMR') return 2;
+    return 3;
 }
 
 function ordenarCategorias(categorias) {
