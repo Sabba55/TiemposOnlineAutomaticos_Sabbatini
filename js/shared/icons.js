@@ -23,6 +23,26 @@ window.UtilidadesIconos = (function () {
             return 'skodars';
         }
 
+        if (vehiculoMinuscula.includes('renault') && vehiculoMinuscula.includes('18')) {
+            return 'renaultold';
+        }
+
+        if (vehiculoMinuscula.includes('renault') && vehiculoMinuscula.includes('clio') && vehiculoMinuscula.includes('s1600')) {
+            return 'renaultold';
+        }
+
+        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('focus') && vehiculoMinuscula.includes('wrc01')) {
+            return 'fordold';
+        }
+
+        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('focus') && vehiculoMinuscula.includes('wrc04')) {
+            return 'fordold';
+        }
+
+        if (vehiculoMinuscula.includes('ford') && vehiculoMinuscula.includes('ka') && vehiculoMinuscula.includes('tatoo')) {
+            return 'fordold';
+        }
+
         return vehiculo.split(' ')[0].toLowerCase();
     }
 
