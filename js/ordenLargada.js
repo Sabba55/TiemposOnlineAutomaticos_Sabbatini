@@ -1,10 +1,14 @@
 const ORDENLARGADA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=2144629647&single=true&output=csv';
 const { analizarCSV } = window.UtilidadesCSV;
 const { obtenerClavesTiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 
 let ordenLargadaData = [];
 let intervaloContador = null;
 let minutoActualTabla = null;
+let filtroNombrePiloto = '';
+let filtroCategoria = '';
+let restaurarFiltroNombre = null;
 
 const MAX_FIJADOS = 3;
 
@@ -33,6 +37,81 @@ function guardarPilotosFijados(pilotos) {
     }));
 }
 // ─────────────────────────────────────────────────────────────────────────────
+
+function normalizarTextoFiltro(texto) {
+    return String(texto || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function obtenerCategoriasDisponibles(datos) {
+    const categorias = [...new Set(datos.map(p => p.Categoria || p.CATEGORIA || '').filter(Boolean))];
+    return ordenarCategorias(categorias);
+}
+
+function filtrarOrdenLargada(datos) {
+    const nombreFiltro = normalizarTextoFiltro(filtroNombrePiloto);
+    const categoriaFiltro = normalizarTextoFiltro(filtroCategoria);
+
+    return datos.filter(piloto => {
+        const nombre = normalizarTextoFiltro(piloto.Nombre || piloto.NOMBRE || '');
+        const categoria = normalizarTextoFiltro(piloto.Categoria || piloto.CATEGORIA || '');
+
+        const coincideNombre = !nombreFiltro || nombre.includes(nombreFiltro);
+        const coincideCategoria = !categoriaFiltro || categoria === categoriaFiltro;
+
+        return coincideNombre && coincideCategoria;
+    });
+}
+
+function renderizarFiltrosOrdenLargada() {
+    const categorias = obtenerCategoriasDisponibles(ordenLargadaData);
+    const contenido = `
+        <div class="filtros-orden-largada">
+            <div class="filtro-grupo filtro-grupo--buscador">
+                <label for="filtroPiloto">Buscar piloto</label>
+                <input
+                    id="filtroPiloto"
+                    type="text"
+                    placeholder="Escribí el nombre..."
+                    value="${filtroNombrePiloto.replace(/"/g, '&quot;')}"
+                    oninput="actualizarFiltroNombrePiloto(this)"
+                >
+            </div>
+            <div class="filtro-grupo filtro-grupo--select">
+                <label for="filtroCategoria">Categoría</label>
+                <select id="filtroCategoria" onchange="actualizarFiltroCategoria(this.value)">
+                    <option value="">Todas</option>
+                    ${categorias.map(categoria => `
+                        <option value="${categoria.replace(/"/g, '&quot;')}" ${normalizarTextoFiltro(categoria) === normalizarTextoFiltro(filtroCategoria) ? 'selected' : ''}>
+                            ${categoria}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        </div>
+    `;
+
+    return contenido;
+}
+
+function actualizarFiltroNombrePiloto(input) {
+    filtroNombrePiloto = input.value;
+    restaurarFiltroNombre = {
+        selectionStart: input.selectionStart,
+        selectionEnd: input.selectionEnd
+    };
+    renderizarOrdenLargada();
+}
+
+function actualizarFiltroCategoria(valor) {
+    filtroCategoria = valor;
+    renderizarOrdenLargada();
+}
 
 function toggleFijarPiloto(nombrePiloto) {
     const fijados = obtenerPilotosFijados();
@@ -317,27 +396,23 @@ function construirFilaPiloto(piloto, index, columnasTiempo, tiempoActualEnMinuto
 }
 
 function renderizarSeccionFijados(datosOrdenados, columnasTiempo, tiempoActualEnMinutos, fijados) {
-    const container = document.getElementById('fijadosContainer');
-    if (!container) return;
-
-    if (fijados.length === 0) {
-        container.style.display = 'none';
-        return;
+    if (!fijados.length) {
+        return '';
     }
 
-    const pilotosFijados = datosOrdenados.filter(p => {
+    const datosFiltrados = filtrarOrdenLargada(datosOrdenados);
+
+    const pilotosFijados = datosFiltrados.filter(p => {
         const nombre = p.Nombre || p.NOMBRE || '';
         return fijados.includes(nombre);
     });
 
     if (pilotosFijados.length === 0) {
-        container.style.display = 'none';
-        return;
+        return '';
     }
 
-    container.style.display = 'block';
-
     let html = `
+        <div id="fijadosContainer" class="fijados-section">
         <div class="fijados-header">
             <span class="fijados-titulo">Pilotos fijados</span>
             <span class="fijados-badge">${pilotosFijados.length} / ${MAX_FIJADOS}</span>
@@ -373,9 +448,10 @@ function renderizarSeccionFijados(datosOrdenados, columnasTiempo, tiempoActualEn
                 </tbody>
             </table>
         </div>
+        </div>
     `;
 
-    container.innerHTML = html;
+    return html;
 }
 
 function renderizarOrdenLargada() {
@@ -397,12 +473,12 @@ function renderizarOrdenLargada() {
     minutoActualTabla = tiempoActualEnMinutos;
 
     const fijados = obtenerPilotosFijados();
+    const datosFiltrados = filtrarOrdenLargada(datosOrdenados);
 
-    // Renderizar sección de fijados (arriba)
-    renderizarSeccionFijados(datosOrdenados, columnasTiempo, tiempoActualEnMinutos, fijados);
-
-    // Renderizar tabla principal
+    // Renderizar filtros + sección de fijados + tabla principal
     let html = `
+        ${renderizarFiltrosOrdenLargada()}
+        ${renderizarSeccionFijados(datosOrdenados, columnasTiempo, tiempoActualEnMinutos, fijados)}
         <div class="category-section">
             <div class="table-wrapper">
                 <table>
@@ -425,7 +501,7 @@ function renderizarOrdenLargada() {
                     <tbody>
     `;
 
-    datosOrdenados.forEach((piloto, index) => {
+    datosFiltrados.forEach((piloto, index) => {
         html += construirFilaPiloto(piloto, index, columnasTiempo, tiempoActualEnMinutos, fijados, fijados.length, false);
     });
 
@@ -437,6 +513,17 @@ function renderizarOrdenLargada() {
     `;
 
     document.getElementById('content').innerHTML = html;
+
+    if (restaurarFiltroNombre) {
+        const input = document.getElementById('filtroPiloto');
+        if (input) {
+            input.focus({ preventScroll: true });
+            if (typeof input.setSelectionRange === 'function') {
+                input.setSelectionRange(restaurarFiltroNombre.selectionStart, restaurarFiltroNombre.selectionEnd);
+            }
+        }
+        restaurarFiltroNombre = null;
+    }
 }
 
 function actualizarUltimaActualizacion() {
