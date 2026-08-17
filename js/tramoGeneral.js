@@ -3,6 +3,7 @@ const TRAMOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqz
 const RALLY_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 const { esDNF, tiempoASegundos, segundosATiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 
@@ -47,24 +48,6 @@ function obtenerNombreTramo(tramoActual) {
     return tramoActual.Nombre || tramoActual.NOMBRE || '';
 }
 
-function obtenerPrioridadCategoria(categoria) {
-    const categoriaNormalizada = (categoria || '').trim().toUpperCase();
-
-    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') {
-        return 0;
-    }
-
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') {
-        return 1;
-    }
-
-    if (categoriaNormalizada === 'RCMR') {
-        return 2;
-    }
-
-    return 3;
-}
-
 function obtenerColorCategoriaPredeterminado(categoria) {
     const categoriaNormalizada = (categoria || '').trim().toUpperCase();
 
@@ -89,19 +72,6 @@ function obtenerColorCategoriaPredeterminado(categoria) {
     }
 
     return null;
-}
-
-function ordenarCategorias(categorias) {
-    return [...categorias].sort((a, b) => {
-        const prioridadA = obtenerPrioridadCategoria(a);
-        const prioridadB = obtenerPrioridadCategoria(b);
-
-        if (prioridadA !== prioridadB) {
-            return prioridadA - prioridadB;
-        }
-
-        return a.localeCompare(b, 'es');
-    });
 }
 
 function crearMapaColoresCategorias(categorias) {

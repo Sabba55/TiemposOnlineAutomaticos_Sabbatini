@@ -3,6 +3,7 @@ window.UtilidadesCalculos = (function () {
     const { esDNF, tiempoASegundos, segundosATiempo } = window.UtilidadesTiempo;
     const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
     const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
+    const { ordenarCategorias } = window.UtilidadesCategorias;
 
     // ── Helpers internos ──────────────────────────────────────────────────────
 
@@ -48,22 +49,6 @@ window.UtilidadesCalculos = (function () {
             }
         }
         return total;
-    }
-
-    // ── Categorías ────────────────────────────────────────────────────────────
-
-    function obtenerPrioridadCategoria(categoria) {
-        const cat = (categoria || '').trim().toUpperCase();
-        if (cat === 'RC2' || cat === 'RALLY2') return 0;
-        if (cat === 'RCMR') return 1;
-        return 2;
-    }
-
-    function ordenarCategorias(categorias) {
-        return [...categorias].sort((a, b) => {
-            const diff = obtenerPrioridadCategoria(a) - obtenerPrioridadCategoria(b);
-            return diff !== 0 ? diff : a.localeCompare(b, 'es');
-        });
     }
 
     function obtenerCategoriasConTiempos(pilotos, tramos) {

@@ -49,6 +49,7 @@
   // ─── HELPERS DE TIEMPO ───────────────────────────────────────────────────────
   const { tiempoASegundos, esDNF, obtenerTiempoEtapa } = window.UtilidadesTiempo;
   const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
+  const { ordenarCategorias } = window.UtilidadesCategorias;
 
   function esFilaShakedownTramo(tramo) {
     if (!tramo) return false;
@@ -114,23 +115,6 @@
   function formatearDiferencia(seg) {
     if (!seg || seg <= 0) return '-';
     return '+' + segundosATiempoConDecimales(seg, 3);
-  }
-
-  // ─── ORDEN DE CATEGORÍAS (igual que el frontend) ─────────────────────────────
-  function obtenerPrioridad(categoria) {
-    const c = (categoria || '').trim().toUpperCase();
-    if (c === 'RC2' || c === 'RALLY2') return 0;
-    if (c === 'RCMR') return 1;
-    return 2;
-  }
-
-  function ordenarCategorias(cats) {
-    return [...cats].sort((a, b) => {
-      const pa = obtenerPrioridad(a);
-      const pb = obtenerPrioridad(b);
-      if (pa !== pb) return pa - pb;
-      return a.localeCompare(b, 'es');
-    });
   }
 
   // ─── CÁLCULO DE CLASIFICACIÓN ────────────────────────────────────────────────
@@ -727,7 +711,7 @@
     doc.save(`puntos-campeonato-${hoy}.pdf`);
   }
 
-  // ─── ATAJO DE TECLADO: Ctrl+Shift+P ──────────────────────────────────────────
+  // ─── ATAJO DE TECLADO: Ctrl+Shift+P | Ctrl+Shift+K ──────────────────────────────────────────
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'P') {
       e.preventDefault();

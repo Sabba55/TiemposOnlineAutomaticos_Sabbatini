@@ -6,6 +6,7 @@ const HORARIOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwv
 const { analizarCSV, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
 const { esDNF, tiempoASegundos, segundosATiempo: formatearSegundos, obtenerTiempoEtapa, obtenerClavesTiempo } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 
 let tramosData = [];
 let pilotosData = [];
@@ -503,12 +504,7 @@ function renderizarGanadoresFinales() {
     
     const totalPEs = obtenerTramosCarrera().length;
     const categorias = [...new Set(pilotosData.map(p => p.Categoria || p.CATEGORIA))].filter(c => c);
-    const categoriaOrdenadas = [...categorias].sort((a, b) => {
-        const prioridades = { 'RC2': 0, 'RALLY2': 0, 'RCMR': 1 };
-        const pa = prioridades[(a || '').trim().toUpperCase()] ?? 2;
-        const pb = prioridades[(b || '').trim().toUpperCase()] ?? 2;
-        return pa !== pb ? pa - pb : a.localeCompare(b, 'es');
-    });
+    const categoriaOrdenadas = ordenarCategorias(categorias);
     
     const clasificacionGeneral = calcularClasificacionGeneral(totalPEs);
     const { obtenerRutaLogoMarca } = window.UtilidadesIconos;

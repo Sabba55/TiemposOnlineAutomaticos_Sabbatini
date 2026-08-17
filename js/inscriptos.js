@@ -1,5 +1,6 @@
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 const { analizarCSV } = window.UtilidadesCSV;
+const { ordenarCategorias, obtenerPrioridadCategoria } = window.UtilidadesCategorias;
 const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
 
 let inscriptosData = [];
@@ -33,26 +34,6 @@ function esCategoriaRC3OJunior(categoria) {
 
 function esCategoriaRC5(categoria) {
     return normalizarCategoria(categoria).toUpperCase() === 'RC5';
-}
-
-function obtenerPrioridadCategoria(categoria) {
-    if (esCategoriaRC1(categoria)) return 0;
-    if (esCategoriaRC2(categoria)) return 1;
-    if (esCategoriaRCMR(categoria)) return 2;
-    return 3;
-}
-
-function ordenarCategorias(categorias) {
-    return [...categorias].sort((a, b) => {
-        const prioridadA = obtenerPrioridadCategoria(a);
-        const prioridadB = obtenerPrioridadCategoria(b);
-
-        if (prioridadA !== prioridadB) {
-            return prioridadA - prioridadB;
-        }
-
-        return a.localeCompare(b, 'es', { sensitivity: 'base' });
-    });
 }
 
 function obtenerIndiceColorCategoria(categoria) {

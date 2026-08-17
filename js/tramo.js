@@ -6,6 +6,7 @@ const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, n
 const { esDNF, tiempoASegundos: convertirASegundos, segundosATiempo: convertirATiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 
 let datosPilotos = [];
 let datosTramos = [];
@@ -224,37 +225,6 @@ function esPowerStage(numeroPE) {
         .filter(t => (t['Power Stage'] || '').trim().toLowerCase() === 'si')
         .map(t => t.PE);
     return pes.length === 1 && pes[0] === numeroPE;
-}
-
-function obtenerPrioridadCategoria(categoria) {
-    const categoriaNormalizada = (categoria || '').trim().toUpperCase();
-
-    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') {
-        return 0;
-    }
-
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') {
-        return 1;
-    }
-
-    if (categoriaNormalizada === 'RCMR') {
-        return 2;
-    }
-
-    return 3;
-}
-
-function ordenarCategorias(categorias) {
-    return [...categorias].sort((a, b) => {
-        const prioridadA = obtenerPrioridadCategoria(a);
-        const prioridadB = obtenerPrioridadCategoria(b);
-
-        if (prioridadA !== prioridadB) {
-            return prioridadA - prioridadB;
-        }
-
-        return a.localeCompare(b, 'es');
-    });
 }
 
 function mostrarInfoTramo() {

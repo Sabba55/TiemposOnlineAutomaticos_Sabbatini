@@ -4,6 +4,7 @@ const URL_PILOTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR7
 const URL_INSCRIPTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 
 const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 const { esDNF, tiempoASegundos, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
 const { obtenerRutaLogoMarca } = window.UtilidadesIconos;
@@ -41,23 +42,6 @@ function contarDNFsHastaPE(piloto, peLimite) {
 
 function pilotoSigueActivoEnPE(piloto, peActual) {
     return contarDNFsHastaPE(piloto, peActual - 1) < 3;
-}
-
-function obtenerPrioridadCategoria(categoria) {
-    const normalizada = (categoria || '').trim().toUpperCase();
-    if (normalizada === 'RC1' || normalizada === 'RALLY1') return 0;
-    if (normalizada === 'RC2' || normalizada === 'RALLY2') return 1;
-    if (normalizada === 'RCMR') return 2;
-    return 3;
-}
-
-function ordenarCategorias(categorias) {
-    return [...categorias].sort((a, b) => {
-        const prioridadA = obtenerPrioridadCategoria(a);
-        const prioridadB = obtenerPrioridadCategoria(b);
-        if (prioridadA !== prioridadB) return prioridadA - prioridadB;
-        return a.localeCompare(b, 'es');
-    });
 }
 
 function obtenerPowerStagePE() {

@@ -8,6 +8,7 @@ const {
     fusionarPilotosConInscriptosYCategoria,
     normalizarFechasComparacion
 } = window.UtilidadesCSV;
+const { ordenarCategorias } = window.UtilidadesCategorias;
 const { esDNF, tiempoASegundos, segundosATiempo, obtenerTiempoEtapa } = window.UtilidadesTiempo;
 
 let datosShakedown = [];
@@ -82,28 +83,6 @@ function formatearVueltaShakedown(valor) {
 function normalizarTextoTiempo(valor) {
     if (!valor || valor === '-' || valor === 'N/T') return '';
     return String(valor).trim();
-}
-
-function obtenerPrioridadCategoria(categoria) {
-    const categoriaNormalizada = (categoria || '').trim().toUpperCase();
-
-    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') return 0;
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') return 1;
-    if (categoriaNormalizada === 'RCMR') return 2;
-    return 3;
-}
-
-function ordenarCategorias(categorias) {
-    return [...categorias].sort((a, b) => {
-        const prioridadA = obtenerPrioridadCategoria(a);
-        const prioridadB = obtenerPrioridadCategoria(b);
-
-        if (prioridadA !== prioridadB) {
-            return prioridadA - prioridadB;
-        }
-
-        return a.localeCompare(b, 'es');
-    });
 }
 
 function capitalizarTexto(texto) {
