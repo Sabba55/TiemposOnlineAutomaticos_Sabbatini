@@ -37,12 +37,20 @@ const {
     calcularPilotoMasConsistenteGeneral,
     calcularTablasMarcas,
     calcularTramoConMasDNFs,
+    calcularVelocidadMaximaDePiloto,
+    calcularConsistenciaDePiloto,
+    calcularTramoMasDisputadoDePiloto,
+    calcularRemontadaPorTiempoDePiloto,
+    calcularRemontadaPorPosicionDePiloto,
+    calcularPosicionesPerdidasDePiloto,
 } = window.UtilidadesCalculos;
 
 const {
     getCategoriaActiva,
     setCategoriaActiva,
     getCategoriaGuardada,
+    getPilotoFiltro,
+    setPilotoFiltro,
     getHeatmapFilas,
     setHeatmapFilas,
     getEstadoHeatmap,
@@ -101,6 +109,9 @@ function renderizarBotonesCategorias(categorias) {
 }
 
 function seleccionarCategoria(categoria) {
+    if (categoria !== getCategoriaActiva()) {
+        setPilotoFiltro(null);
+    }
     setCategoriaActiva(categoria);
 
     document.querySelectorAll('.btn-categoria').forEach(btn => {
@@ -123,19 +134,15 @@ function renderizarEstadisticasCategoria(categoria) {
     const mayorGanador     = calcularMayorGanador(ganadoresPE);
     const marcaMasGanadora = calcularMarcaMasGanadora(ganadoresPE, categoria, datosPilotos, datosTramos);
     const porcentajeSinDNF = calcularPorcentajeSinDNF(categoria, datosPilotos, datosTramos);
-    const velocidadMax     = calcularVelocidadMaxima(categoria, datosPilotos, datosTramos);
-    const consistente      = calcularPilotoMasConsistente(categoria, datosPilotos, datosTramos);
-    const remontadaTiempo  = calcularRemontadaPorTiempo(categoria, datosPilotos, datosTramos);
-    const remontadaPos     = calcularRemontadaPorPosicion(categoria, datosPilotos, datosTramos);
-    const tramoDisputado   = calcularTramoMasDisputado(categoria, datosPilotos, datosTramos);
-    const posicionesPerdidas = calcularPilotoMasPosicionesPerdidas(categoria, datosPilotos, datosTramos);
+    const pilotoFiltro     = getPilotoFiltro();
 
     contenedor.innerHTML = [
         renderizarResumen(categoria, porcentajeSinDNF),
         renderizarGanadores(categoria, ganadoresPE, mayorGanador, marcaMasGanadora),
         renderizarEvolucionTop5(categoria),
         renderizarHeatmapRendimiento(categoria),
-        renderizarFilaInferior(velocidadMax, consistente, categoria, tramoDisputado, remontadaTiempo, remontadaPos, posicionesPerdidas),
+        renderizarFiltroPiloto(categoria, pilotoFiltro),
+        `<div id="filaInferiorContainer">${_renderizarFilaInferiorHTML(categoria, pilotoFiltro)}</div>`,
     ].join('');
 }
 
@@ -393,16 +400,80 @@ function _renderTarjetaMarcaGanadora(marcaMasGanadora) {
 
 // ── Render: fila inferior ─────────────────────────────────────────────────────
 
-function renderizarFilaInferior(velocidadMax, consistente, categoria, tramoDisputado, remontadaTiempo, remontadaPos, posicionesPerdidas) {
+function _calcularDatosFilaInferior(categoria, nombrePiloto) {
+    if (!nombrePiloto) {
+        return {
+            filtradoPorPiloto: false,
+            velocidadMax: calcularVelocidadMaxima(categoria, datosPilotos, datosTramos),
+            consistente: calcularPilotoMasConsistente(categoria, datosPilotos, datosTramos),
+            tramoDisputado: calcularTramoMasDisputado(categoria, datosPilotos, datosTramos),
+            remontadaTiempo: calcularRemontadaPorTiempo(categoria, datosPilotos, datosTramos),
+            remontadaPos: calcularRemontadaPorPosicion(categoria, datosPilotos, datosTramos),
+            posicionesPerdidas: calcularPilotoMasPosicionesPerdidas(categoria, datosPilotos, datosTramos),
+        };
+    }
+
+    return {
+        filtradoPorPiloto: true,
+        velocidadMax: calcularVelocidadMaximaDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+        consistente: calcularConsistenciaDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+        tramoDisputado: calcularTramoMasDisputadoDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+        remontadaTiempo: calcularRemontadaPorTiempoDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+        remontadaPos: calcularRemontadaPorPosicionDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+        posicionesPerdidas: calcularPosicionesPerdidasDePiloto(nombrePiloto, categoria, datosPilotos, datosTramos),
+    };
+}
+
+function _renderizarFilaInferiorHTML(categoria, nombrePiloto) {
+    const d = _calcularDatosFilaInferior(categoria, nombrePiloto);
+
     return `
         <div class="fila-inferior">
-            ${_renderVelocidad(velocidadMax)}
-            ${_renderConsistente(consistente, categoria)}
-            ${_renderTramoDisputado(tramoDisputado)}
-            ${_renderRemontadaTiempo(remontadaTiempo)}
-            ${_renderRemontadaPos(remontadaPos)}
-            ${_renderPosicionesPerdidas(posicionesPerdidas)}
+            ${_renderVelocidad(d.velocidadMax)}
+            ${_renderConsistente(d.consistente, categoria)}
+            ${d.filtradoPorPiloto ? _renderTramoDisputadoPiloto(d.tramoDisputado) : _renderTramoDisputado(d.tramoDisputado)}
+            ${d.filtradoPorPiloto ? _renderRemontadaTiempoPiloto(d.remontadaTiempo) : _renderRemontadaTiempo(d.remontadaTiempo)}
+            ${d.filtradoPorPiloto ? _renderRemontadaPosPiloto(d.remontadaPos) : _renderRemontadaPos(d.remontadaPos)}
+            ${d.filtradoPorPiloto ? _renderPosicionesPerdidasPiloto(d.posicionesPerdidas) : _renderPosicionesPerdidas(d.posicionesPerdidas)}
         </div>`;
+}
+
+// ── Render: filtro de piloto ────────────────────────────────────────────────
+
+function renderizarFiltroPiloto(categoria, pilotoFiltro) {
+    const pilotos = pilotosDeCat(categoria, datosPilotos, datosTramos)
+        .map(p => p.Nombre || p.NOMBRE || '')
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, 'es'));
+
+    const opciones = pilotos
+        .map(nombre => `<option value="${nombre}"${nombre === pilotoFiltro ? ' selected' : ''}>${nombre}</option>`)
+        .join('');
+
+    return `
+        <div class="filtro-piloto-row">
+            <label for="filtroPilotoSelect" class="filtro-piloto-label">Ver datos de:</label>
+            <select id="filtroPilotoSelect" class="select-filtro-piloto" onchange="aplicarFiltroPiloto(this.value)">
+                <option value=""${pilotoFiltro ? '' : ' selected'}>Todos los pilotos</option>
+                ${opciones}
+            </select>
+            <button class="btn-limpiar-filtro" onclick="limpiarFiltroPiloto()">Borrar filtro</button>
+        </div>`;
+}
+
+function aplicarFiltroPiloto(nombre) {
+    setPilotoFiltro(nombre || null);
+    const categoria = getCategoriaActiva();
+    const contenedorFila = document.getElementById('filaInferiorContainer');
+    if (contenedorFila) {
+        contenedorFila.innerHTML = _renderizarFilaInferiorHTML(categoria, getPilotoFiltro());
+    }
+}
+
+function limpiarFiltroPiloto() {
+    const select = document.getElementById('filtroPilotoSelect');
+    if (select) select.value = '';
+    aplicarFiltroPiloto('');
 }
 
 function _renderVelocidad(velocidadMax) {
@@ -592,6 +663,158 @@ function _renderTramoDisputado(tramoDisputado) {
                         <span>${tramoDisputado.tiempo2}</span>
                     </span>
                 </span>
+            </div>
+        </div>`;
+}
+
+function _renderTramoDisputadoPiloto(tramoDisputado) {
+    const fmtDifDisputado = seg => {
+        const total = Math.abs(seg);
+        const m   = Math.floor(total / 60);
+        const s   = Math.floor(total % 60);
+        const dec = String(Math.round((total % 1) * 1000)).padStart(3, '0');
+        const sStr = `${s}.${dec}s`;
+        return m > 0 ? `${m}m ${sStr}` : sStr;
+    };
+
+    if (!tramoDisputado) {
+        return `
+            <div class="tarjeta-disputado">
+                <div class="seccion-titulo">Tramo más disputado</div>
+                <div class="no-data">Sin información</div>
+            </div>`;
+    }
+    return `
+        <div class="tarjeta-disputado">
+            <div class="seccion-titulo">Tramo más disputado</div>
+            <div class="disputado-header">
+                <span class="disputado-pe" style="font-size:12px">PE ${tramoDisputado.pe}</span>
+                <span class="disputado-nombre">| ${tramoDisputado.nombre}</span>
+            </div>
+            <div class="disputado-dif">${fmtDifDisputado(tramoDisputado.difSegundos)}</div>
+            <div class="disputado-dif-label">de diferencia con el ganador del tramo</div>
+            <div class="disputado-tiempos">
+                <span>
+                    <span class="disputado-badge disputado-badge-1">1</span>
+                    <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
+                        <span style="font-size:11px;font-weight:600;color:#334155;">${tramoDisputado.piloto1}</span>
+                        <span>${tramoDisputado.tiempo1}</span>
+                    </span>
+                </span>
+                <span>
+                    <span class="disputado-badge disputado-badge-2">${tramoDisputado.posicionPropio}</span>
+                    <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
+                        <span style="font-size:11px;font-weight:600;color:#334155;">${tramoDisputado.piloto2}</span>
+                        <span>${tramoDisputado.tiempo2}</span>
+                    </span>
+                </span>
+            </div>
+        </div>`;
+}
+
+function _renderRemontadaTiempoPiloto(remontadaTiempo) {
+    if (!remontadaTiempo) {
+        return `
+            <div class="tarjeta-remontada">
+                <div class="seccion-titulo">Remontada (tiempo)</div>
+                <div class="no-data">Sin información</div>
+            </div>`;
+    }
+
+    const sinMejora = remontadaTiempo.recorteSegundos <= 0;
+
+    return `
+        <div class="tarjeta-remontada">
+            <div class="seccion-titulo">Remontada (tiempo)</div>
+            <div class="remontada-piloto">${remontadaTiempo.nombre}</div>
+            <span class="remontada-badge">${sinMejora ? 'Sin recorte al líder' : `−${_fmtDif(remontadaTiempo.recorteSegundos)} al líder`}</span>
+            <div class="remontada-posiciones">
+                <div class="remontada-pos-inicio">
+                    <div class="remontada-pos-numero" style="font-size:20px;">+${_fmtDif(remontadaTiempo.peorDifSegundos)}</div>
+                    <div class="remontada-pos-label">tras PE ${remontadaTiempo.desdePE}</div>
+                </div>
+                <div class="remontada-flecha">→</div>
+                <div class="remontada-pos-fin">
+                    <div class="remontada-pos-numero" style="font-size:20px;">${_fmtDifFinal(remontadaTiempo.difFinalSegundos)}</div>
+                    <div class="remontada-pos-label">Actual</div>
+                </div>
+            </div>
+            <div class="remontada-ganancia">
+                ${sinMejora
+                    ? `No logró recortar diferencia con el líder desde su peor momento (tras PE ${remontadaTiempo.desdePE})`
+                    : `Recortó <strong>${_fmtDif(remontadaTiempo.recorteSegundos)}</strong> al líder desde su peor momento (tras PE ${remontadaTiempo.desdePE})`}
+            </div>
+        </div>`;
+}
+
+function _renderRemontadaPosPiloto(remontadaPos) {
+    if (!remontadaPos) {
+        return `
+            <div class="tarjeta-remontada">
+                <div class="seccion-titulo">Remontada (posición)</div>
+                <div class="no-data">Sin información</div>
+            </div>`;
+    }
+
+    const g = remontadaPos.ganancia;
+    const sinMejora = g <= 0;
+
+    return `
+        <div class="tarjeta-remontada">
+            <div class="seccion-titulo">Remontada (posición)</div>
+            <div class="remontada-piloto">${remontadaPos.nombre}</div>
+            <span class="remontada-badge">${sinMejora ? 'Sin ganancia de posiciones' : `+${g} posicion${g !== 1 ? 'es' : ''}`}</span>
+            <div class="remontada-posiciones">
+                <div class="remontada-pos-inicio">
+                    <div class="remontada-pos-numero">${remontadaPos.posInicio}°</div>
+                    <div class="remontada-pos-label">tras PE ${remontadaPos.desdePE}</div>
+                </div>
+                <div class="remontada-flecha">→</div>
+                <div class="remontada-pos-fin">
+                    <div class="remontada-pos-numero">${remontadaPos.posFin}°</div>
+                    <div class="remontada-pos-label">Actual</div>
+                </div>
+            </div>
+            <div class="remontada-ganancia">
+                ${sinMejora
+                    ? `No mejoró respecto a su peor posición (tras PE ${remontadaPos.desdePE})`
+                    : `Ganó <strong>${g}</strong> lugar${g !== 1 ? 'es' : ''} desde su peor posición (tras PE ${remontadaPos.desdePE})`}
+            </div>
+        </div>`;
+}
+
+function _renderPosicionesPerdidasPiloto(posicionesPerdidas) {
+    if (!posicionesPerdidas) {
+        return `
+            <div class="tarjeta-remontada tarjeta-perdida">
+                <div class="seccion-titulo">Posiciones perdidas</div>
+                <div class="no-data">Sin información</div>
+            </div>`;
+    }
+
+    const p = posicionesPerdidas.perdida;
+    const sinPerdida = p <= 0;
+
+    return `
+        <div class="tarjeta-remontada tarjeta-perdida">
+            <div class="seccion-titulo">Posiciones perdidas</div>
+            <div class="remontada-piloto">${posicionesPerdidas.nombre}</div>
+            <span class="remontada-badge perdida-badge">${sinPerdida ? 'Sin caída de posiciones' : `−${p} posicion${p !== 1 ? 'es' : ''}`}</span>
+            <div class="remontada-posiciones">
+                <div class="remontada-pos-inicio">
+                    <div class="remontada-pos-numero perdida-pos-mejor">${posicionesPerdidas.posMejor}°</div>
+                    <div class="remontada-pos-label">tras PE ${posicionesPerdidas.desdePE}</div>
+                </div>
+                <div class="remontada-flecha perdida-flecha">→</div>
+                <div class="remontada-pos-fin">
+                    <div class="remontada-pos-numero perdida-pos-fin">${posicionesPerdidas.posFin}°</div>
+                    <div class="remontada-pos-label">Actual</div>
+                </div>
+            </div>
+            <div class="remontada-ganancia perdida-ganancia">
+                ${sinPerdida
+                    ? `Se mantuvo en su mejor posición o mejoró (tras PE ${posicionesPerdidas.desdePE})`
+                    : `Cayó <strong>${p}</strong> lugar${p !== 1 ? 'es' : ''} desde su mejor posición (tras PE ${posicionesPerdidas.desdePE})`}
             </div>
         </div>`;
 }

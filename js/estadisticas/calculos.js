@@ -254,6 +254,23 @@ window.UtilidadesCalculos = (function () {
         return resultado;
     }
 
+    // ── Variantes filtradas por piloto ────────────────────────────────────────
+    // Reutilizan las funciones de campo completo pasándoles un pool de un solo
+    // piloto: como esas funciones ya buscan "el mejor dentro del pool", con un
+    // pool de 1 devuelven directamente los datos propios de ese piloto.
+
+    function _soloPiloto(nombrePiloto, pilotos) {
+        return pilotos.filter(p => (p.Nombre || p.NOMBRE) === nombrePiloto);
+    }
+
+    function calcularVelocidadMaximaDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        return calcularVelocidadMaxima(categoria, _soloPiloto(nombrePiloto, pilotos), tramos);
+    }
+
+    function calcularConsistenciaDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        return calcularPilotoMasConsistente(categoria, _soloPiloto(nombrePiloto, pilotos), tramos);
+    }
+
     // ── Tramo más disputado ───────────────────────────────────────────────────
 
     function calcularTramoMasDisputado(categoria, pilotos, tramos) {
@@ -289,6 +306,53 @@ window.UtilidadesCalculos = (function () {
                     tiempo2: segundosATiempo(ordenados[1].seg, 3),
                     piloto1: ordenados[0].nombre,
                     piloto2: ordenados[1].nombre
+                };
+            }
+        });
+
+        return resultado;
+    }
+
+    function calcularTramoMasDisputadoDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        let menorDif = Infinity;
+        let resultado = null;
+
+        tramos.forEach(tramo => {
+            const pe = tramo.PE;
+            const col = `SS${pe}`;
+
+            const ordenados = pilotosDeCat(categoria, pilotos, tramos)
+                .filter(p => p[col] && p[col].trim() !== '' && !esDNF(p[col]))
+                .map(p => ({
+                    nombre: p.Nombre || p.NOMBRE || '',
+                    seg: tiempoASegundos(p[col])
+                }))
+                .filter(p => p.seg < 999999)
+                .sort((a, b) => a.seg - b.seg);
+
+            if (ordenados.length < 2) return;
+
+            const idxPropio = ordenados.findIndex(p => p.nombre === nombrePiloto);
+            if (idxPropio <= 0) return; // no participó en el tramo, o fue el ganador (dif. 0 no aporta)
+
+            const ganador = ordenados[0];
+            const propio = ordenados[idxPropio];
+            const dif = propio.seg - ganador.seg;
+
+            if (dif < menorDif) {
+                menorDif = dif;
+                resultado = {
+                    pe,
+                    kms: tramo.KMS || null,
+                    nombre: tramo.Desde && tramo.Hasta
+                        ? `${tramo.Desde} - ${tramo.Hasta}`
+                        : `PE ${pe}`,
+                    difSegundos: dif,
+                    tiempo1: segundosATiempo(ganador.seg, 3),
+                    tiempo2: segundosATiempo(propio.seg, 3),
+                    piloto1: ganador.nombre,
+                    piloto2: propio.nombre,
+                    posicionPropio: idxPropio + 1
                 };
             }
         });
@@ -421,6 +485,38 @@ window.UtilidadesCalculos = (function () {
         return mejorRemontada?.recorteSegundos > 0 ? mejorRemontada : null;
     }
 
+    function calcularRemontadaPorTiempoDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
+        if (ultimoPE < 2) return null;
+
+        const tiemposPorPE = Array.from({ length: ultimoPE }, (_, i) =>
+            _tiemposAcumuladosPorPE(i + 1, categoria, pilotos, tramos)
+        );
+
+        const tiemposFinal = tiemposPorPE[ultimoPE - 1];
+        if (tiemposFinal[nombrePiloto] === undefined) return null;
+
+        const liderFinal = Math.min(...Object.values(tiemposFinal));
+        const difFinal = tiemposFinal[nombrePiloto] - liderFinal;
+
+        let peorDif = -Infinity;
+        let peorPE = null;
+
+        for (let pe = 1; pe < ultimoPE; pe++) {
+            const mapa = tiemposPorPE[pe - 1];
+            const propio = mapa[nombrePiloto];
+            if (propio === undefined) continue;
+            const lider = Math.min(...Object.values(mapa));
+            const dif = propio - lider;
+            if (dif > peorDif) { peorDif = dif; peorPE = pe; }
+        }
+
+        if (peorPE === null) return null;
+        const recorte = peorDif - difFinal;
+
+        return { nombre: nombrePiloto, peorDifSegundos: peorDif, difFinalSegundos: difFinal, recorteSegundos: recorte, desdePE: peorPE };
+    }
+
     function calcularRemontadaPorPosicion(categoria, pilotos, tramos) {
         const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
         if (ultimoPE < 2) return null;
@@ -455,6 +551,32 @@ window.UtilidadesCalculos = (function () {
         return mejorRemontada;
     }
 
+    function calcularRemontadaPorPosicionDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
+        if (ultimoPE < 2) return null;
+
+        const snapshots = Array.from({ length: ultimoPE }, (_, i) =>
+            calcularPosicionesAcumuladas(categoria, i + 1, pilotos, tramos)
+        );
+        const posicionesFinal = snapshots[ultimoPE - 1];
+        const posFin = posicionesFinal[nombrePiloto];
+        if (!posFin) return null;
+
+        let peorPos = -Infinity;
+        let peorPE = null;
+
+        for (let pe = 1; pe < ultimoPE; pe++) {
+            const pos = snapshots[pe - 1][nombrePiloto];
+            if (!pos) continue;
+            if (pos > peorPos) { peorPos = pos; peorPE = pe; }
+        }
+
+        if (peorPE === null) return null;
+        const ganancia = peorPos - posFin;
+
+        return { nombre: nombrePiloto, posInicio: peorPos, posFin, ganancia, desdePE: peorPE };
+    }
+
     function calcularPilotoMasPosicionesPerdidas(categoria, pilotos, tramos) {
         const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
         if (ultimoPE < 2) return null;
@@ -487,6 +609,32 @@ window.UtilidadesCalculos = (function () {
         });
 
         return peorCaso;
+    }
+
+    function calcularPosicionesPerdidasDePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
+        if (ultimoPE < 2) return null;
+
+        const snapshots = Array.from({ length: ultimoPE }, (_, i) =>
+            calcularPosicionesAcumuladas(categoria, i + 1, pilotos, tramos)
+        );
+        const posicionesFinal = snapshots[ultimoPE - 1];
+        const posFin = posicionesFinal[nombrePiloto];
+        if (!posFin) return null;
+
+        let mejorPos = Infinity;
+        let mejorPE = null;
+
+        for (let pe = 1; pe < ultimoPE; pe++) {
+            const pos = snapshots[pe - 1][nombrePiloto];
+            if (!pos) continue;
+            if (pos < mejorPos) { mejorPos = pos; mejorPE = pe; }
+        }
+
+        if (mejorPE === null) return null;
+        const perdida = posFin - mejorPos;
+
+        return { nombre: nombrePiloto, posMejor: mejorPos, posFin, perdida, desdePE: mejorPE };
     }
 
     // ── Evolución Top 5 ───────────────────────────────────────────────────────
@@ -870,6 +1018,13 @@ window.UtilidadesCalculos = (function () {
         calcularPilotoMasConsistenteGeneral,
         calcularTablasMarcas,
         calcularTramoConMasDNFs,
+        // variantes filtradas por piloto (filtro individual en la fila inferior)
+        calcularVelocidadMaximaDePiloto,
+        calcularConsistenciaDePiloto,
+        calcularTramoMasDisputadoDePiloto,
+        calcularRemontadaPorTiempoDePiloto,
+        calcularRemontadaPorPosicionDePiloto,
+        calcularPosicionesPerdidasDePiloto,
         // helpers reutilizables
         pilotosDeCat,
         ultimoPEConDatos,

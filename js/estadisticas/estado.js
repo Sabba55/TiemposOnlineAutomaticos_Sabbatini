@@ -16,6 +16,17 @@ window.UtilidadesEstado = (function () {
         return sessionStorage.getItem('categoriaActiva');
     }
 
+    // ── Filtro de piloto (fila inferior de estadísticas) ────────────────────────
+    let _pilotoFiltro = null;
+
+    function getPilotoFiltro() {
+        return _pilotoFiltro;
+    }
+
+    function setPilotoFiltro(nombre) {
+        _pilotoFiltro = nombre || null;
+    }
+
     // ── Heatmap ───────────────────────────────────────────────────────────────
     const _heatmapFilas = {};   // { tbodyId: string[] }
     const _estadoHeatmap = {};  // { tbodyId: { visible: number } }
@@ -44,6 +55,8 @@ window.UtilidadesEstado = (function () {
         getCategoriaActiva,
         setCategoriaActiva,
         getCategoriaGuardada,
+        getPilotoFiltro,
+        setPilotoFiltro,
         getHeatmapFilas,
         setHeatmapFilas,
         getEstadoHeatmap,
