@@ -350,7 +350,7 @@ tbody tr:hover td {
     font-weight: 800;
     color: #1f4b8f;
     font-size: 18px;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease;
 }
 
 .pe-horario-largando {
