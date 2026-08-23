@@ -51,31 +51,22 @@ function obtenerNombreTramo(tramoActual) {
 function obtenerColorCategoriaPredeterminado(categoria) {
     const categoriaNormalizada = (categoria || '').trim().toUpperCase();
 
-    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') {
-        return 1;
-    }
-
-    if (categoriaNormalizada === 'RCMR') {
-        return 2;
-    }
-
-    if (categoriaNormalizada === 'RC4') {
-        return 3;
-    }
-
-    if (categoriaNormalizada === 'RC3' || categoriaNormalizada === 'JUNIOR') {
-        return 4;
-    }
-
-    if (categoriaNormalizada === 'RC5') {
-        return 5;
-    }
+    if (categoriaNormalizada === 'RC1' || categoriaNormalizada === 'RALLY1') return 1; // Naranja
+    if (categoriaNormalizada === 'RC2' || categoriaNormalizada === 'RALLY2') return 2; // Rojo
+    if (categoriaNormalizada === 'RCMR') return 3; // Amarillo
+    if (categoriaNormalizada === 'RC4') return 4; // Azul
+    if (categoriaNormalizada === 'RC3' || categoriaNormalizada === 'JUNIOR') return 5; // Violeta
+    if (categoriaNormalizada === 'RC5') return 6; // Celeste
+    if (categoriaNormalizada === 'RC6') return 7; // Celeste agua
+    if (categoriaNormalizada === 'S1600') return 8; // Verde limón
+    if (categoriaNormalizada === 'WRC' || categoriaNormalizada === 'WRC 2.0') return 9; // Amarillo caramelo
+    if (categoriaNormalizada === 'A' || categoriaNormalizada === 'GR. A') return 10; // Blanco
 
     return null;
 }
 
 function crearMapaColoresCategorias(categorias) {
-    const coloresDisponibles = [6, 7, 8];
+    const coloresDisponibles = [11, 12, 13]; // fallback para categorías no listadas
     let indiceColorDisponible = 0;
     const mapaColores = {};
 

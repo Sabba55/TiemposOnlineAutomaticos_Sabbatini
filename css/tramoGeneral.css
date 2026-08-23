@@ -286,37 +286,19 @@ tr:hover td {
     font-family: 'Orbitron', serif;
 }
 
-.category-bg-1 td {
-    background-color: #fcc2c2 !important;
-}
-
-.category-bg-2 td {
-    background-color: #fffec3 !important;
-}
-
-.category-bg-3 td {
-    background-color: #c9defc !important;
-}
-
-.category-bg-4 td {
-    background-color: #f8c9ea !important;
-}
-
-.category-bg-5 td {
-    background-color: #c7f5f7 !important;
-}
-
-.category-bg-6 td {
-    background-color: #e5d4ff !important;
-}
-
-.category-bg-7 td {
-    background-color: #d8f0c8 !important;
-}
-
-.category-bg-8 td {
-    background-color: #ffe1bf !important;
-}
+.category-bg-1  td { background-color: #ffc988 !important; } /* Naranja */
+.category-bg-2  td { background-color: #ffa3a3 !important; } /* Rojo */
+.category-bg-3  td { background-color: #ffeb77 !important; } /* Amarillo */
+.category-bg-4  td { background-color: #9fc7ff !important; } /* Azul */
+.category-bg-5  td { background-color: #af90ff !important; } /* Violeta */
+.category-bg-6  td { background-color: #6ee0ff !important; } /* Celeste */
+.category-bg-7  td { background-color: #a0f0e1 !important; } /* Celeste agua */
+.category-bg-8  td { background-color: #deff97 !important; } /* Verde limón */
+.category-bg-9  td { background-color: #eed186 !important; } /* Amarillo caramelo */
+.category-bg-10 td { background-color: #f2f0e8 !important; } /* Blanco (levemente tizado para no fundirse con el fondo) */
+.category-bg-11 td { background-color: #fca8e3 !important; } /* Genérico rosa */
+.category-bg-12 td { background-color: #dcdcd5 !important; } /* Genérico gris */
+.category-bg-13 td { background-color: #c7f5f7 !important; } /* Genérico agua */
 
 tr.category-bg-1:hover td,
 tr.category-bg-2:hover td,
@@ -325,7 +307,12 @@ tr.category-bg-4:hover td,
 tr.category-bg-5:hover td,
 tr.category-bg-6:hover td,
 tr.category-bg-7:hover td,
-tr.category-bg-8:hover td {
+tr.category-bg-8:hover td,
+tr.category-bg-9:hover td,
+tr.category-bg-10:hover td,
+tr.category-bg-11:hover td,
+tr.category-bg-12:hover td,
+tr.category-bg-13:hover td {
     background-color: #d6d6d6 !important;
 }
 
