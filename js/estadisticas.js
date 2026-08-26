@@ -43,6 +43,9 @@ const {
     calcularRemontadaPorTiempoDePiloto,
     calcularRemontadaPorPosicionDePiloto,
     calcularPosicionesPerdidasDePiloto,
+    calcularTelemetriaPiloto,
+    calcularAtaquePiloto,
+    calcularRitmoRelativoPiloto,
 } = window.UtilidadesCalculos;
 
 const {
@@ -143,6 +146,7 @@ function renderizarEstadisticasCategoria(categoria) {
         renderizarHeatmapRendimiento(categoria),
         renderizarFiltroPiloto(categoria, pilotoFiltro),
         `<div id="filaInferiorContainer">${_renderizarFilaInferiorHTML(categoria, pilotoFiltro)}</div>`,
+        `<div id="telemetriaPilotoContainer">${renderizarTelemetriaPiloto(categoria, pilotoFiltro)}</div>`,
     ].join('');
 }
 
@@ -468,12 +472,187 @@ function aplicarFiltroPiloto(nombre) {
     if (contenedorFila) {
         contenedorFila.innerHTML = _renderizarFilaInferiorHTML(categoria, getPilotoFiltro());
     }
+    const contenedorTelemetria = document.getElementById('telemetriaPilotoContainer');
+    if (contenedorTelemetria) {
+        contenedorTelemetria.innerHTML = renderizarTelemetriaPiloto(categoria, getPilotoFiltro());
+    }
 }
 
 function limpiarFiltroPiloto() {
     const select = document.getElementById('filtroPilotoSelect');
     if (select) select.value = '';
     aplicarFiltroPiloto('');
+}
+
+// ── Render: telemetría del piloto (radar + ritmo + ataque) ─────────────────
+
+function _generarRadarTelemetria(puntajes) {
+    const ejes = [
+        { key: 'ritmo', label: 'Ritmo' },
+        { key: 'consistencia', label: 'Consistencia' },
+        { key: 'eficiencia', label: 'Eficiencia' },
+        { key: 'remontada', label: 'Remontada' },
+        { key: 'ataque', label: 'Ataque' },
+    ];
+    const cx = 160, cy = 158, maxR = 104;
+    const n = ejes.length;
+
+    function punto(i, r) {
+        const angulo = (-90 + i * (360 / n)) * (Math.PI / 180);
+        return [cx + r * Math.cos(angulo), cy + r * Math.sin(angulo)];
+    }
+
+    const anillos = [0.25, 0.5, 0.75, 1].map(frac => {
+        const pts = ejes.map((_, i) => punto(i, maxR * frac).join(',')).join(' ');
+        return `<polygon points="${pts}" fill="none" stroke="#d7dde5" stroke-width="1"/>`;
+    }).join('');
+
+    const lineasEjes = ejes.map((_, i) => {
+        const [x, y] = punto(i, maxR);
+        return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#d7dde5" stroke-width="1"/>`;
+    }).join('');
+
+    const etiquetas = ejes.map((eje, i) => {
+        const [x, y] = punto(i, maxR + 28);
+        const valor = puntajes[eje.key] ?? 0;
+        return `
+            <text x="${x}" y="${y - 6}" text-anchor="middle" font-family="'Orbitron',serif"
+                font-size="11" font-weight="700" fill="#161c25">${eje.label}</text>
+            <text x="${x}" y="${y + 10}" text-anchor="middle" font-family="'Orbitron',serif"
+                font-size="13" font-weight="800" fill="#e09000">${valor}</text>`;
+    }).join('');
+
+    const puntosDatos = ejes.map((eje, i) => {
+        const valor = Math.max(0, Math.min(100, puntajes[eje.key] ?? 0));
+        return punto(i, (valor / 100) * maxR).join(',');
+    }).join(' ');
+
+    const vertices = ejes.map((eje, i) => {
+        const valor = Math.max(0, Math.min(100, puntajes[eje.key] ?? 0));
+        const [x, y] = punto(i, (valor / 100) * maxR);
+        return `<circle cx="${x}" cy="${y}" r="4" fill="#ffab1a" stroke="#161c25" stroke-width="1.5"/>`;
+    }).join('');
+
+    return `
+        <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;">
+            ${anillos}
+            ${lineasEjes}
+            <polygon points="${puntosDatos}" fill="rgba(255,171,26,0.28)" stroke="#e09000" stroke-width="2.5" stroke-linejoin="round"/>
+            ${vertices}
+            ${etiquetas}
+        </svg>`;
+}
+
+function renderizarTelemetriaPiloto(categoria, nombrePiloto) {
+    if (!nombrePiloto) return '';
+
+    const telemetria = calcularTelemetriaPiloto(nombrePiloto, categoria, datosPilotos, datosTramos);
+    if (!telemetria) return '';
+
+    const ritmo   = calcularRitmoRelativoPiloto(nombrePiloto, categoria, datosPilotos, datosTramos);
+    const ataque  = calcularAtaquePiloto(nombrePiloto, categoria, datosPilotos, datosTramos);
+    const radarSVG = _generarRadarTelemetria(telemetria);
+
+    const fueParejoConGanador = ritmo
+        && !ritmo.esElGanador
+        && ritmo.desglosePorPE.length > 0
+        && ritmo.desglosePorPE.every(p => p.esLiderPE);
+
+    let htmlRitmo;
+    if (!ritmo) {
+        htmlRitmo = `
+            <div class="tarjeta-ritmo">
+                <div class="seccion-titulo">Ritmo respecto al ganador</div>
+                <div class="no-data">Sin tramos válidos para calcular el ritmo</div>
+            </div>`;
+    } else if (ritmo.esElGanador) {
+        htmlRitmo = `
+            <div class="tarjeta-ritmo">
+                <div class="seccion-titulo">Ritmo respecto al ganador</div>
+                <div class="ritmo-lider-mensaje">Ganador de la clasificación general</div>
+                <div class="ritmo-detalle">
+                    <span>Es el piloto de referencia contra el que se compara el resto de la categoría</span>
+                </div>
+            </div>`;
+    } else if (fueParejoConGanador) {
+        const cantPEs = ritmo.desglosePorPE.length;
+        htmlRitmo = `
+            <div class="tarjeta-ritmo">
+                <div class="seccion-titulo">Ritmo respecto al ganador</div>
+                <div class="ritmo-lider-mensaje">Sin diferencia con ${ritmo.nombreGanador} en los ${cantPEs} tramo${cantPEs !== 1 ? 's' : ''} analizados</div>
+                <div class="ritmo-detalle">
+                    <span>Analizado sobre <strong>${ritmo.totalKmsAnalizados} km</strong> cronometrados</span>
+                </div>
+            </div>`;
+    } else {
+        htmlRitmo = `
+            <div class="tarjeta-ritmo">
+                <div class="seccion-titulo">Ritmo respecto al ganador</div>
+                <div class="ritmo-numero-row">
+                    <span class="ritmo-numero">${ritmo.ritmoGlobalSegKm > 0 ? '+' : ''}${ritmo.ritmoGlobalSegKm}</span>
+                    <span class="ritmo-unidad">seg/km</span>
+                </div>
+                <div class="ritmo-detalle">
+                    <span>Analizado sobre <strong>${ritmo.totalKmsAnalizados} km</strong> cronometrados</span>
+                    <span>Diferencia total acumulada: <strong>${ritmo.totalSegDiferencia > 0 ? '+' : ''}${ritmo.totalSegDiferencia}s</strong></span>
+                    <span class="ritmo-nota">Comparado contra ${ritmo.nombreGanador}, ganador de la clasificación general</span>
+                </div>
+            </div>`;
+    }
+
+    let htmlAtaque;
+    if (ataque && ataque.comparaciones.length > 0) {
+        const items = ataque.comparaciones.map(c => {
+            // cambioSeg: negativo = recortó tiempo (mejoró), positivo = perdió tiempo (empeoró)
+            // misma convención de signo que el heatmap "Diferencias al Líder por Tramo"
+            const cambioSeg = -c.difSegundos;
+            const clase = _clasificarDelta(cambioSeg, 'Mismo ritmo');
+            const palabra = clase.label.match(/^(Recortó|Perdió)/)?.[0] || clase.label;
+
+            const signoSeg = c.difSegundos > 0 ? '-' : '+';
+
+            return `
+                <div class="ataque-item">
+                    <div class="ataque-item-tramo">${c.nombreBucle}</div>
+                    <div class="ataque-item-tiempos">
+                        <span>PE${c.peInicial}: ${c.tiempoInicial}</span>
+                        <span class="ataque-item-flecha">→</span>
+                        <span>PE${c.peFinal}: ${c.tiempoFinal}</span>
+                    </div>
+                    <div class="ataque-badge" style="background:${clase.bg};color:${clase.text};">
+                        ${palabra} ${signoSeg}${Math.abs(c.difSegundos).toFixed(2)}s
+                    </div>
+                </div>`;
+        }).join('');
+
+        htmlAtaque = `
+            <div class="tarjeta-ataque">
+                <div class="seccion-titulo">Evolución en tramos repetidos</div>
+                ${items}
+            </div>`;
+    } else {
+        htmlAtaque = `
+            <div class="tarjeta-ataque">
+                <div class="seccion-titulo">Evolución en tramos repetidos</div>
+                <div class="no-data">Sin tramos repetidos disputados por este piloto</div>
+            </div>`;
+    }
+
+    return `
+        <div class="telemetria-panel">
+            <div class="telemetria-header">
+                <div class="seccion-titulo">Telemetría de ${nombrePiloto}</div>
+            </div>
+            <div class="telemetria-grid">
+                <div class="tarjeta-radar">
+                    ${radarSVG}
+                </div>
+                <div class="telemetria-columna-derecha">
+                    ${htmlRitmo}
+                    ${htmlAtaque}
+                </div>
+            </div>
+        </div>`;
 }
 
 function _renderVelocidad(velocidadMax) {
@@ -1082,6 +1261,42 @@ function renderizarEvolucionTop5(categoria) {
         </div>`;
 }
 
+// ── Escala de color compartida (heatmap + evolución en tramos repetidos) ───
+
+function _clasificarDelta(delta, labelNeutral = 'Líder') {
+    if (delta < -0.001) {
+        if (delta < -20) return { bg: '#0ea5e9', text: '#ffffff', label: 'Recortó +20s' };
+        if (delta < -8)  return { bg: '#38bdf8', text: '#0c4a6e', label: 'Recortó 8–20s' };
+        if (delta < -3)  return { bg: '#7dd3fc', text: '#0c4a6e', label: 'Recortó 3–8s' };
+        return { bg: '#bae6fd', text: '#0369a1', label: 'Recortó ≤3s' };
+    }
+    if (delta > 0.001) {
+        if (delta > 20) return { bg: '#f4694b', text: '#5a0d00', label: 'Perdió +20s' };
+        if (delta > 8)  return { bg: '#ffb347', text: '#6b2500', label: 'Perdió 8–20s' };
+        if (delta > 3)  return { bg: '#ffe066', text: '#6b4700', label: 'Perdió 3–8s' };
+        return { bg: '#c8e87a', text: '#2d4a00', label: 'Perdió ≤3s' };
+    }
+    return { bg: '#a3d977', text: '#1a3a00', label: labelNeutral };
+}
+
+function _leyendaDeltaHTML(compacta = false) {
+    const items = [
+        { color: '#0ea5e9', text: 'Recortó +20s' }, { color: '#38bdf8', text: 'Recortó 8–20s' },
+        { color: '#7dd3fc', text: 'Recortó 3–8s' }, { color: '#bae6fd', text: 'Recortó ≤3s' },
+        { color: '#a3d977', text: 'Lider' },         { color: '#c8e87a', text: 'Perdió ≤3s' },
+        { color: '#ffe066', text: 'Perdió 3–8s' },  { color: '#ffb347', text: 'Perdió 8–20s' },
+        { color: '#f4694b', text: 'Perdió +20s' },  { color: '#f87171', text: 'DNF' },
+    ];
+    const fontSize = compacta ? 11 : 12;
+    const swatchW = compacta ? 18 : 20;
+    const swatchH = compacta ? 13 : 14;
+    return items.map(({ color, text }) => `
+        <div style="display:flex;align-items:center;gap:6px;font-size:${fontSize}px;font-weight:600;color:#334155;">
+            <div style="width:${swatchW}px;height:${swatchH}px;background:${color};border-radius:3px;flex-shrink:0;"></div>
+            <span>${text}</span>
+        </div>`).join('');
+}
+
 // ── Render: heatmap ───────────────────────────────────────────────────────────
 
 function renderizarHeatmapRendimiento(categoria) {
@@ -1094,19 +1309,7 @@ function renderizarHeatmapRendimiento(categoria) {
         if (sinDato)   return { bg: '#e2e8f0', text: '#94a3b8' };
         if (esDNFVal)  return { bg: '#f87171', text: '#7f1d1d' };
         if (esGanador) return { bg: '#a3d977', text: '#1a3a00' };
-        if (delta < -0.001) {
-            if (delta < -20) return { bg: '#0ea5e9', text: '#ffffff' };
-            if (delta < -8)  return { bg: '#38bdf8', text: '#0c4a6e' };
-            if (delta < -3)  return { bg: '#7dd3fc', text: '#0c4a6e' };
-            return { bg: '#bae6fd', text: '#0369a1' };
-        }
-        if (delta > 0.001) {
-            if (delta > 20) return { bg: '#f4694b', text: '#5a0d00' };
-            if (delta > 8)  return { bg: '#ffb347', text: '#6b2500' };
-            if (delta > 3)  return { bg: '#ffe066', text: '#6b4700' };
-            return { bg: '#c8e87a', text: '#2d4a00' };
-        }
-        return { bg: '#a3d977', text: '#1a3a00' };
+        return _clasificarDelta(delta);
     }
 
     function formatearDelta(seg) {
@@ -1235,18 +1438,7 @@ function renderizarHeatmapRendimiento(categoria) {
         setTimeout(() => _restaurarEstadoHeatmap(heatmapId, btnId, PAGINA, pilotosOrdenados.length), 0);
     }
 
-    const leyendaItems = [
-        { color: '#0ea5e9', text: 'Recortó +20s' }, { color: '#38bdf8', text: 'Recortó 8–20s' },
-        { color: '#7dd3fc', text: 'Recortó 3–8s' }, { color: '#bae6fd', text: 'Recortó ≤3s' },
-        { color: '#a3d977', text: 'Lider' },         { color: '#c8e87a', text: 'Perdió ≤3s' },
-        { color: '#ffe066', text: 'Perdió 3–8s' },  { color: '#ffb347', text: 'Perdió 8–20s' },
-        { color: '#f4694b', text: 'Perdió +20s' },  { color: '#f87171', text: 'DNF' },
-    ];
-    const leyendaHTML = leyendaItems.map(({ color, text }) => `
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#334155;">
-            <div style="width:20px;height:14px;background:${color};border-radius:3px;"></div>
-            <span>${text}</span>
-        </div>`).join('');
+    const leyendaHTML = _leyendaDeltaHTML();
 
     return `
         <div style="margin-bottom:30px;">

@@ -989,7 +989,227 @@ window.UtilidadesCalculos = (function () {
         return resultado?.dnfs > 0 ? resultado : null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Telemetría Visual (Radar Chart / Gráfico de Araña) ────────────────────
+    function calcularTelemetriaPiloto(nombrePiloto, categoria, pilotos, tramos) {
+        const poolCat = pilotosDeCat(categoria, pilotos, tramos);
+        const piloto = poolCat.find(p => (p.Nombre || p.NOMBRE) === nombrePiloto);
+        if (!piloto) return null;
+
+        // 1. Ritmo de Carrera (Pace relativo al líder de categoría en cada PE sin DNF)
+        let sumaRitmoRelativo = 0;
+        let cantPEsRitmo = 0;
+        tramos.forEach(t => {
+            const col = `SS${t.PE}`;
+            if (!piloto[col] || esDNF(piloto[col])) return;
+            
+            const segPropio = tiempoASegundos(piloto[col]);
+            if (segPropio >= 999999) return;
+
+            const tiemposPecat = poolCat
+                .filter(p => p[col] && !esDNF(p[col]))
+                .map(p => tiempoASegundos(p[col]))
+                .filter(s => s < 999999);
+
+            if (tiemposPecat.length === 0) return;
+            const mejorSeg = Math.min(...tiemposPecat);
+
+            // % de diferencia con el más rápido (0% = líder, a más % más lento)
+            const difPct = mejorSeg > 0 ? ((segPropio - mejorSeg) / mejorSeg) * 100 : 0;
+            sumaRitmoRelativo += difPct;
+            cantPEsRitmo++;
+        });
+
+        // Mapeo: 0% de diferencia = 100 ptos; >=15% de diferencia = 0 ptos
+        const ritmoPromedioPct = cantPEsRitmo > 0 ? (sumaRitmoRelativo / cantPEsRitmo) : 15;
+        const ritmoPuntaje = Math.max(0, Math.min(100, Math.round(100 - (ritmoPromedioPct * 6.66))));
+
+        // 2. Consistencia (basado en el Desvío Estándar / CV del piloto)
+        const datosConsistencia = calcularConsistenciaDePiloto(nombrePiloto, categoria, pilotos, tramos);
+        let consistenciaPuntaje = 50; // valor por defecto medio
+        if (datosConsistencia && datosConsistencia.desvio) {
+            const cv = parseFloat(datosConsistencia.desvio);
+            // CV 0% = 100 ptos; CV >= 5% = 0 ptos
+            consistenciaPuntaje = Math.max(0, Math.min(100, Math.round(100 - (cv * 20))));
+        }
+
+        // 3. Agresividad / Ataque (Evolución en Tramos Repetidos)
+        const datosAtaque = calcularAtaquePiloto(nombrePiloto, categoria, pilotos, tramos);
+        let ataquePuntaje = 50;
+        if (datosAtaque && datosAtaque.mejoraPromedioPct !== null) {
+            // Si mejoró un 3% o más = 100 ptos; Si empeoró un -3% o más = 0 ptos
+            const pct = datosAtaque.mejoraPromedioPct;
+            ataquePuntaje = Math.max(0, Math.min(100, Math.round(50 + (pct * 16.66))));
+        }
+
+        // 4. Eficiencia (Penalizaciones y % de DNFs)
+        const penRaw = piloto.PENALIZACION || piloto.Penalizacion || '';
+        const penSeg = tiempoASegundos(penRaw);
+        const tienePenalizacion = penSeg > 0 && penSeg < 999999;
+
+        let peTotales = 0;
+        let peCompletados = 0;
+        tramos.forEach(t => {
+            const col = `SS${t.PE}`;
+            if (piloto[col] && piloto[col].trim() !== '') {
+                peTotales++;
+                if (!esDNF(piloto[col])) peCompletados++;
+            }
+        });
+
+        const pctCompletado = peTotales > 0 ? (peCompletados / peTotales) : 1;
+        let eficienciaPuntaje = Math.round(pctCompletado * 100);
+        if (tienePenalizacion) eficienciaPuntaje = Math.max(0, eficienciaPuntaje - 20);
+
+        // 5. Capacidad de Remontada (Posiciones y tiempo recuperado)
+        const remPos = calcularRemontadaPorPosicionDePiloto(nombrePiloto, categoria, pilotos, tramos);
+        const remTie = calcularRemontadaPorTiempoDePiloto(nombrePiloto, categoria, pilotos, tramos);
+        
+        let gananciaPos = remPos ? remPos.ganancia : 0;
+        let recorteSeg = remTie ? remTie.recorteSegundos : 0;
+
+        // Base 50; +15 ptos por posición ganada y +5 ptos por cada 10s recortados
+        let remontadaPuntaje = 50 + (gananciaPos * 15) + (recorteSeg / 2);
+        remontadaPuntaje = Math.max(0, Math.min(100, Math.round(remontadaPuntaje)));
+
+        return {
+            ritmo: ritmoPuntaje,
+            consistencia: consistenciaPuntaje,
+            ataque: ataquePuntaje,
+            eficiencia: eficienciaPuntaje,
+            remontada: remontadaPuntaje
+        };
+    }
+
+    // ── Métrica de "Ataque" (Evolución en Tramos Repetidos) ──────────────────
+
+    function calcularAtaquePiloto(nombrePiloto, categoria, pilotos, tramos) {
+        // Agrupar tramos repetidos por el mismo origen y destino (Desde -> Hasta)
+        const gruposPorNombre = {};
+        tramos.forEach(t => {
+            const desde = (t.Desde || '').trim();
+            const hasta = (t.Hasta || '').trim();
+            if (!desde || !hasta) return;
+            const clave = `${desde} - ${hasta}`;
+            if (!gruposPorNombre[clave]) gruposPorNombre[clave] = [];
+            gruposPorNombre[clave].push(t);
+        });
+
+        const piloto = pilotosDeCat(categoria, pilotos, tramos)
+            .find(p => (p.Nombre || p.NOMBRE) === nombrePiloto);
+        if (!piloto) return null;
+
+        const comparaciones = [];
+        let sumaPorcentajesMejora = 0;
+
+        Object.entries(gruposPorNombre).forEach(([nombreBucle, pes]) => {
+            if (pes.length < 2) return; // Se necesitan al menos 2 pasadas por el mismo tramo
+
+            // Tomar la primera pasada y la última pasada del bucle
+            const pe1 = pes[0];
+            const pe2 = pes[pes.length - 1];
+
+            const t1 = piloto[`SS${pe1.PE}`];
+            const t2 = piloto[`SS${pe2.PE}`];
+
+            if (!t1 || !t2 || esDNF(t1) || esDNF(t2)) return;
+
+            const seg1 = tiempoASegundos(t1);
+            const seg2 = tiempoASegundos(t2);
+
+            if (seg1 >= 999999 || seg2 >= 999999) return;
+
+            const difSeg = seg1 - seg2; // Si es > 0, mejoró (hizo menos tiempo en el 2° paso)
+            const mejoraPct = (difSeg / seg1) * 100;
+
+            sumaPorcentajesMejora += mejoraPct;
+            comparaciones.push({
+                nombreBucle,
+                peInicial: pe1.PE,
+                peFinal: pe2.PE,
+                tiempoInicial: segundosATiempo(seg1, 2),
+                tiempoFinal: segundosATiempo(seg2, 2),
+                difSegundos: difSeg,
+                mejoraPct: mejoraPct.toFixed(2),
+                esMejora: difSeg > 0
+            });
+        });
+
+        if (comparaciones.length === 0) return null;
+
+        return {
+            comparaciones,
+            mejoraPromedioPct: (sumaPorcentajesMejora / comparaciones.length)
+        };
+    }
+
+    // ── Pace / Ritmo Relativo (seg/km vs. Líder) ─────────────────────────────
+
+    function calcularRitmoRelativoPiloto(nombrePiloto, categoria, pilotos, tramos) {
+        const poolCat = pilotosDeCat(categoria, pilotos, tramos);
+        const piloto = poolCat.find(p => (p.Nombre || p.NOMBRE) === nombrePiloto);
+        if (!piloto) return null;
+
+        // Determinar el ganador de la clasificación general de la categoría
+        // (posición 1 en el acumulado final, no el más rápido de cada PE individual)
+        const ultimoPE = ultimoPEConDatos(categoria, pilotos, tramos);
+        if (ultimoPE === 0) return null;
+
+        const posicionesFinales = calcularPosicionesAcumuladas(categoria, ultimoPE, pilotos, tramos);
+        const nombreGanador = Object.entries(posicionesFinales).find(([, pos]) => pos === 1)?.[0];
+        const ganador = nombreGanador ? poolCat.find(p => (p.Nombre || p.NOMBRE) === nombreGanador) : null;
+        if (!ganador) return null;
+
+        const esElGanador = nombrePiloto === (ganador.Nombre || ganador.NOMBRE || '');
+
+        let totalSegDiferencia = 0;
+        let totalKmsAnalizados = 0;
+        const desglosePorPE = [];
+
+        tramos.forEach(t => {
+            const pe = t.PE;
+            const col = `SS${pe}`;
+            const kms = t.KMS ? parseFloat(t.KMS) : null;
+            const tPropio = piloto[col];
+            const tGanador = ganador[col];
+
+            if (!kms || isNaN(kms) || kms <= 0 || !tPropio || esDNF(tPropio) || !tGanador || esDNF(tGanador)) {
+                return;
+            }
+
+            const segPropio = tiempoASegundos(tPropio);
+            const segGanador = tiempoASegundos(tGanador);
+            if (segPropio >= 999999 || segGanador >= 999999) return;
+
+            const difSeg = segPropio - segGanador; // Diferencia en segundos respecto al ganador de la general
+            const segPorKm = difSeg / kms;
+
+            totalSegDiferencia += difSeg;
+            totalKmsAnalizados += kms;
+
+            desglosePorPE.push({
+                pe,
+                kms,
+                tiempoPropio: segundosATiempo(segPropio, 2),
+                tiempoLider: segundosATiempo(segGanador, 2),
+                difSegundos: difSeg,
+                segPorKm: segPorKm.toFixed(3),
+                esLiderPE: difSeg === 0
+            });
+        });
+
+        if (totalKmsAnalizados === 0) return null;
+
+        const ritmoGlobalSegKm = totalSegDiferencia / totalKmsAnalizados;
+
+        return {
+            nombreGanador: ganador.Nombre || ganador.NOMBRE || '',
+            esElGanador,
+            ritmoGlobalSegKm: ritmoGlobalSegKm.toFixed(3),
+            totalKmsAnalizados: totalKmsAnalizados.toFixed(2),
+            totalSegDiferencia: totalSegDiferencia.toFixed(2),
+            desglosePorPE
+        };
+    }
 
     return {
         obtenerCategoriasConTiempos,
@@ -1025,6 +1245,12 @@ window.UtilidadesCalculos = (function () {
         calcularRemontadaPorTiempoDePiloto,
         calcularRemontadaPorPosicionDePiloto,
         calcularPosicionesPerdidasDePiloto,
+
+        // telemetría del piloto (panel debajo del filtro individual)
+        calcularTelemetriaPiloto,
+        calcularAtaquePiloto,
+        calcularRitmoRelativoPiloto,
+
         // helpers reutilizables
         pilotosDeCat,
         ultimoPEConDatos,

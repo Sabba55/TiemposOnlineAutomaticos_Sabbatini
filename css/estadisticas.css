@@ -956,3 +956,181 @@ tbody tr:nth-child(even) td { background-color: var(--color-panel-brillo); }
         transform: translateY(-6px);
     }
 }
+
+/* ══════════════════════════════════════════════
+   TELEMETRÍA DEL PILOTO (radar + pace + ataque)
+   ══════════════════════════════════════════════ */
+.telemetria-panel {
+    margin-top: 8px;
+    animation: heatmap-fade-in 0.3s ease forwards;
+}
+
+.telemetria-header {
+    margin-bottom: 4px;
+}
+
+.telemetria-grid {
+    display: grid;
+    grid-template-columns: 1fr minmax(400px, 700px);
+    gap: 20px;
+    align-items: start;
+}
+
+.telemetria-columna-derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tarjeta radar */
+.tarjeta-radar {
+    background: linear-gradient(145deg, #ffffff 0%, #edf1f5 100%);
+    border: 2px solid var(--color-borde-suave);
+    border-radius: 16px;
+    padding: 20px 10px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tarjeta-radar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--color-oro) 0%, #ffc040 100%);
+}
+
+/* Tarjeta pace / ritmo relativo */
+.tarjeta-ritmo {
+    background: linear-gradient(145deg, #ffffff 0%, #edf1f5 100%);
+    border: 2px solid var(--color-borde-suave);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tarjeta-ritmo::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+}
+
+.ritmo-numero-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    margin: 6px 0 14px;
+}
+
+.ritmo-numero {
+    font-family: 'Orbitron', serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: #0d9488;
+    line-height: 1;
+}
+
+.ritmo-unidad {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d9488;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.ritmo-detalle {
+    background: var(--color-panel);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--color-texto-suave);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ritmo-detalle strong {
+    color: var(--color-texto);
+    font-weight: 600;
+}
+
+.ritmo-lider-mensaje {
+    text-align: center;
+    font-family: 'Orbitron', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0d9488;
+    background: #ecfdf5;
+    border-radius: 8px;
+    padding: 14px 12px;
+    margin: 6px 0 14px;
+}
+
+.ritmo-nota {
+    font-style: italic;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+/* Tarjeta ataque / evolución en tramos repetidos */
+.tarjeta-ataque {
+    background: linear-gradient(145deg, #ffffff 0%, #edf1f5 100%);
+    border: 2px solid var(--color-borde-suave);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tarjeta-ataque::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
+}
+
+.ataque-item {
+    background: var(--color-panel);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 10px;
+}
+
+.ataque-item-tramo {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin-bottom: 6px;
+}
+
+.ataque-item-tiempos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-texto-suave);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.ataque-item-flecha {
+    color: var(--color-borde);
+    font-weight: 700;
+}
+
+.ataque-badge {
+    display: inline-block;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
