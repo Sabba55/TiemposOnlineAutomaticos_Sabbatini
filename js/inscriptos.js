@@ -149,8 +149,11 @@ async function cargarDatos() {
         renderizarInscriptos();
         actualizarUltimaActualizacion();
     } catch (error) {
-        document.getElementById('content').innerHTML =
-            '<div class="error">Error al cargar los datos. Por favor, verificá que la hoja de cálculo esté publicada correctamente.</div>';
+        window.UtilidadesError.mostrarError(
+            document.getElementById('content'),
+            'Error al cargar los inscriptos.',
+            cargarDatos
+        );
         console.error('Error:', error);
     }
 }

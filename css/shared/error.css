@@ -1,0 +1,47 @@
+.error-box {
+    background: linear-gradient(135deg, var(--color-error, #a61b1b) 0%, #c62828 100%);
+    color: white;
+    padding: 24px 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin: 20px 0;
+    box-shadow: 0 8px 18px rgba(166, 27, 27, 0.24);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.error-box-mensaje {
+    line-height: 1.5;
+    font-size: 15px;
+}
+
+.error-box-boton {
+    background: #ffffff;
+    color: var(--color-error, #a61b1b);
+    border: none;
+    padding: 10px 26px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Orbitron', serif;
+}
+
+.error-box-boton:hover:not(:disabled) {
+    background: #f4f6f8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.error-box-boton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.error-box-boton:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

@@ -159,8 +159,11 @@ async function cargarDatos() {
         actualizarContadorProximaLargada();
         actualizarUltimaActualizacion();
     } catch (error) {
-        document.getElementById('content').innerHTML =
-            '<div class="error">Error al cargar los datos. Por favor, verificá que la hoja de cálculo esté publicada correctamente.</div>';
+        window.UtilidadesError.mostrarError(
+            document.getElementById('content'),
+            'Error al cargar el orden de largada.',
+            cargarDatos
+        );
         console.error('Error:', error);
     }
 }

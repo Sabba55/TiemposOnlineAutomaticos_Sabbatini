@@ -256,8 +256,13 @@ async function cargarDatos() {
         renderizarShakedown();
         actualizarUltimaActualizacion();
     } catch (error) {
-        if (content) {
-            content.innerHTML = '<div class="error">Error al cargar los datos de shakedown.</div>';
+        if (content) {        
+            window.UtilidadesError.mostrarError(
+                content,
+                'Error al cargar los datos del shakedown.',
+                cargarDatos
+            );
+
         }
         console.error('Error al cargar shakedown:', error);
     }

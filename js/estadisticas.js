@@ -1610,8 +1610,12 @@ async function cargarDatos() {
     } catch (error) {
         const hayDatos = datosPilotos.length > 0 || datosTramos.length > 0;
         if (!hayDatos) {
-            document.getElementById('content').innerHTML =
-                '<div class="error">Error al cargar los datos.</div>';
+            window.UtilidadesError.mostrarError(
+                document.getElementById('content'),
+                'Error al cargar las estadísticas.',
+                cargarDatos
+            );    
+                
         }
         console.error('Error al recargar:', error);
     }

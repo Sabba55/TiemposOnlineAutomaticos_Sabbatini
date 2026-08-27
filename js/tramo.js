@@ -121,8 +121,12 @@ async function cargarDatos() {
         actualizarBotonesNavegacion();
         actualizarUltimaActualizacion();
     } catch (error) {
-        document.getElementById('content').innerHTML =
-            '<div class="error">Error al cargar los datos.</div>';
+        window.UtilidadesError.mostrarError(
+            document.getElementById('content'),
+            'Error al cargar los datos del tramo.',
+            cargarDatos
+        );
+        
         console.error('Error:', error);
     }
 }

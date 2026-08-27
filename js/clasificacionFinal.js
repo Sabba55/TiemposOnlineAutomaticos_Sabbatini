@@ -416,8 +416,13 @@ async function cargarDatos() {
         renderizarResultados();
         actualizarUltimaActualizacion();
     } catch (error) {
-        document.getElementById('content').innerHTML = '<div class="error">Error al cargar los datos.</div>';
-        console.error('Error cargando clasificacion final:', error);
+        window.UtilidadesError.mostrarError(
+            document.getElementById('content'),
+            'Error al cargar la clasificación final.',
+            cargarDatos
+        );
+        
+        console.error('Error cargando clasificación final:', error);
     }
 }
 
