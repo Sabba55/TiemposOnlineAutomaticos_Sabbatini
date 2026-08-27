@@ -112,9 +112,14 @@ async function cargarDatos() {
 
         const rallyData = analizarCSVBase(textoRally);
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
+        
         const pilotosBase = analizarCSV(textoPilotos);
         const inscriptosData = analizarCSVBase(textoInscriptos);
-        datosPilotos = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);
+        datosPilotos = window.UtilidadesEstabilizador.estabilizarPilotos(
+            'tramo',
+            fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally),
+            window.UtilidadesTiempo.obtenerClavesTiempo
+        );
         datosTramos = analizarTramosCSV(textoTramos);
 
         renderizarResultados();
