@@ -169,11 +169,7 @@ async function cargarDatos() {
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         const pilotosBase = analizarPilotosCSV(pilotosText);
         const inscriptosData = analizarCSV(inscriptosText);
-        pilotosData = window.UtilidadesEstabilizador.estabilizarPilotos(
-            'tramoGeneral',
-            fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally),
-            window.UtilidadesTiempo.obtenerClavesTiempo
-        );
+        pilotosData = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);
         tramosData = analizarTramosCSV(tramosText);
 
         renderizarResultados();

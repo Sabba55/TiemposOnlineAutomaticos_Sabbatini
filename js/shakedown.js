@@ -40,9 +40,7 @@ function obtenerPrimerValor(fila, claves) {
 }
 
 function obtenerVuelta(piloto, numero) {
-    const valorCrudo = obtenerPrimerValor(piloto, [`Pasada${numero}`, `Vuelta${numero}`, `PE${numero}`, `SS${numero}`]);
-    const clave = window.UtilidadesEstabilizador.clavePiloto(piloto);
-    return window.UtilidadesEstabilizador.estabilizarValor('shakedown', clave, `vuelta${numero}`, valorCrudo);
+    return obtenerPrimerValor(piloto, [`Pasada${numero}`, `Vuelta${numero}`, `PE${numero}`, `SS${numero}`]);
 }
 
 function esTiempoNoTerminado(valor) {
@@ -244,11 +242,6 @@ async function cargarDatos() {
                 const pe1 = obtenerPrimerValor(piloto, ['Pasada1', 'Vuelta1', 'PE1', 'SS1']);
                 return Boolean(pe1 || pe0);
             });
-
-        window.UtilidadesEstabilizador.limpiarNoVistos(
-            'shakedown',
-            new Set(datosShakedown.map(window.UtilidadesEstabilizador.clavePiloto))
-        );
 
         const titulo = document.getElementById('title');
         if (titulo) {
