@@ -268,7 +268,7 @@ window.UtilidadesCalculos = (function () {
     }
 
     function calcularConsistenciaDePiloto(nombrePiloto, categoria, pilotos, tramos) {
-        return calcularPilotoMasConsistente(categoria, _soloPiloto(nombrePiloto, pilotos), tramos);
+        return calcularPilotoMasConsistente(categoria, _soloPiloto(nombrePiloto, pilotos), tramos, false);
     }
 
     // ── Tramo más disputado ───────────────────────────────────────────────────
@@ -362,7 +362,16 @@ window.UtilidadesCalculos = (function () {
 
     // ── Piloto más consistente ────────────────────────────────────────────────
 
-    function calcularPilotoMasConsistente(categoria, pilotos, tramos) {
+    // Un piloto con uno o más DNF en cualquier tramo queda fuera del ranking
+    // de "más consistente" (un abandono deja menos datos y lo favorecería).
+    function _tieneDNF(piloto, tramos) {
+        return tramos.some(t => {
+            const tiempo = piloto[`SS${t.PE}`];
+            return tiempo && tiempo.trim() !== '' && esDNF(tiempo);
+        });
+    }
+
+    function calcularPilotoMasConsistente(categoria, pilotos, tramos, ignorarDNF = true) {
         const gruposPorNombre = {};
         tramos.forEach(tramo => {
             const desde = (tramo.Desde || '').trim();
@@ -379,6 +388,7 @@ window.UtilidadesCalculos = (function () {
         if (gruposRepetidos.length === 0) return null;
 
         const candidatos = pilotosDeCat(categoria, pilotos, tramos)
+            .filter(piloto => !ignorarDNF || !_tieneDNF(piloto, tramos))
             .map(piloto => {
                 const cvsPorGrupo = [];
 
@@ -855,6 +865,7 @@ window.UtilidadesCalculos = (function () {
         );
 
         const candidatos = participaron
+            .filter(piloto => !_tieneDNF(piloto, tramos))
             .map(piloto => {
                 const cvsPorGrupo = [];
 
