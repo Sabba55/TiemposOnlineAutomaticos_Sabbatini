@@ -1,9 +1,3 @@
-// ─── pdfGenerator.js ──────────────────────────────────────────────────────────
-// Genera la Clasificación Final por Categoría en PDF usando jsPDF (browser).
-// Se activa con Ctrl+Shift+P desde index.html.
-// Requiere que pilotosData y tramosData estén cargados globalmente.
-// ──────────────────────────────────────────────────────────────────────────────
-
 (function () {
 
   // ─── COLORES (basados en el sitio web) ──────────────────────────────────────
@@ -39,8 +33,10 @@
   const ANCHO_PENAL = 16;
   const ANCHO_DIF   = 17;
   const ANCHO_PROM  = 11;
-  const PUNTOS_GENERAL     = [30, 24, 21, 19, 17, 15, 13, 11, 9, 7, 5, 4, 3, 2, 1];
-  const PUNTOS_POWER_STAGE = [5, 4, 3, 2, 1];
+
+  // [PUNTOS-K DESACTIVADO] Tablas de puntos (solo se usaban en Ctrl+Shift+K)
+  // const PUNTOS_GENERAL     = [30, 24, 21, 19, 17, 15, 13, 11, 9, 7, 5, 4, 3, 2, 1];
+  // const PUNTOS_POWER_STAGE = [5, 4, 3, 2, 1];
 
   // Logo — ajustá estos valores a gusto
   const ALTO_LOGO  = 7;
@@ -65,11 +61,12 @@
     return tramosData.filter(tramo => !esFilaShakedownTramo(tramo));
   }
 
-  function obtenerPowerStagePE() {
-    const powerStage = obtenerTramosCarrera().filter(t => (t['Power Stage'] || '').trim().toLowerCase() === 'si');
-    if (powerStage.length !== 1) return null;
-    return powerStage[0].PE || null;
-  }
+  // [PUNTOS-K DESACTIVADO] Solo la usaba el cálculo de puntos de campeonato
+  // function obtenerPowerStagePE() {
+  //   const powerStage = obtenerTramosCarrera().filter(t => (t['Power Stage'] || '').trim().toLowerCase() === 'si');
+  //   if (powerStage.length !== 1) return null;
+  //   return powerStage[0].PE || null;
+  // }
 
   function contarDNFsHastaPE(piloto, peLimite) {
     let dnfs = 0;
@@ -88,13 +85,14 @@
     return contarDNFsHastaPE(piloto, peActual - 1) < 3;
   }
 
-  function obtenerPuntosGeneral(posicion) {
-    return PUNTOS_GENERAL[posicion - 1] || 0;
-  }
-
-  function obtenerPuntosPowerStage(posicion) {
-    return PUNTOS_POWER_STAGE[posicion - 1] || 0;
-  }
+  // [PUNTOS-K DESACTIVADO] Conversión de posición a puntos
+  // function obtenerPuntosGeneral(posicion) {
+  //   return PUNTOS_GENERAL[posicion - 1] || 0;
+  // }
+  //
+  // function obtenerPuntosPowerStage(posicion) {
+  //   return PUNTOS_POWER_STAGE[posicion - 1] || 0;
+  // }
 
   function segundosATiempoConDecimales(segundos, decimales) {
     if (!segundos || segundos >= 999999) return '-';
@@ -421,98 +419,101 @@
     });
   }
 
+  // ─── PUNTOS CAMPEONATO (Ctrl+Shift+K) — DESACTIVADO ──────────────────────────
+  // [PUNTOS-K DESACTIVADO] Columnas de la tabla de puntos
+  // function construirColumnasPuntos(doc, todosLosPilotos) {
+  //   const medirTexto = (texto, size) => {
+  //     doc.setFontSize(size);
+  //     return doc.getStringUnitWidth(texto) * size / doc.internal.scaleFactor;
+  //   };
+  //
+  //   let maxPiloto   = medirTexto('PILOTO', FONT_SIZE_HEADER);
+  //   let maxVehiculo = medirTexto('VEHICULO', FONT_SIZE_HEADER);
+  //
+  //   todosLosPilotos.forEach(p => {
+  //     const wP = medirTexto(p.nombre || '', FONT_SIZE_FILA);
+  //     const wV = medirTexto(p.vehiculo || '', FONT_SIZE_FILA);
+  //     if (wP > maxPiloto) maxPiloto = wP;
+  //     if (wV > maxVehiculo) maxVehiculo = wV;
+  //   });
+  //
+  //   const PADDING = 3;
+  //   const anchoPiloto = Math.ceil(maxPiloto) + PADDING * 2;
+  //   const anchoVehiculo = Math.ceil(maxVehiculo) + PADDING * 2;
+  //   const anchoGeneral = Math.max(medirTexto('GENERAL', FONT_SIZE_HEADER) + PADDING * 2, 16);
+  //   const anchoPower = Math.max(medirTexto('POWER ST.', FONT_SIZE_HEADER) + PADDING * 2, 18);
+  //   const anchoTotal = Math.max(medirTexto('TOTAL', FONT_SIZE_HEADER) + PADDING * 2, 14);
+  //
+  //   const fijos = ANCHO_POS + anchoPiloto + anchoVehiculo + anchoGeneral + anchoPower + anchoTotal;
+  //   const escala = fijos > ANCHO_UTIL ? ANCHO_UTIL / fijos : 1;
+  //   const esc = v => v * escala;
+  //
+  //   return [
+  //     { label: 'POS',       campo: '_pos',      ancho: esc(ANCHO_POS),      align: 'center', bold: true  },
+  //     { label: 'PILOTO',    campo: '_piloto',   ancho: esc(anchoPiloto),    align: 'center', bold: true  },
+  //     { label: 'VEHICULO',  campo: '_vehiculo', ancho: esc(anchoVehiculo),  align: 'center', bold: false },
+  //     { label: 'GENERAL',   campo: '_general',  ancho: esc(anchoGeneral),   align: 'center', bold: false },
+  //     { label: 'POWER ST.', campo: '_power',    ancho: esc(anchoPower),     align: 'center', bold: false },
+  //     { label: 'TOTAL',     campo: '_totalPts', ancho: esc(anchoTotal),     align: 'center', bold: true  },
+  //   ];
+  // }
+
+  // [PUNTOS-K DESACTIVADO] Cálculo de puntos general + power stage
+  // function calcularPuntosCampeonatoPorCategorias() {
+  //   const clasificacion = calcularClasifPorCategorias();
+  //   const categoriasOrdenadas = Object.keys(clasificacion);
+  //   const pePowerStage = obtenerPowerStagePE();
+  //   const hayPowerStage = Boolean(pePowerStage);
+  //   const resultado = {};
+  //
+  //   categoriasOrdenadas.forEach(cat => {
+  //     const pilotosBase = clasificacion[cat].map((p, idx) => ({
+  //       ...p,
+  //       posicionFinal: idx + 1,
+  //       puntosGeneral: obtenerPuntosGeneral(idx + 1),
+  //       puntosPower: 0,
+  //       totalPuntos: 0,
+  //     }));
+  //
+  //     if (hayPowerStage) {
+  //       const campoPS = `PE${pePowerStage}`;
+  //       const ordenPowerStage = pilotosBase
+  //         .map(p => {
+  //           const tiempoPS = p.registro ? p.registro[campoPS] : '';
+  //           if (!tiempoPS || esDNF(tiempoPS)) return null;
+  //           const segPS = tiempoASegundos(tiempoPS);
+  //           if (segPS >= 999999) return null;
+  //           return {
+  //             clave: p.clave,
+  //             segPS,
+  //           };
+  //         })
+  //         .filter(Boolean)
+  //         .sort((a, b) => a.segPS - b.segPS);
+  //
+  //       const puntosPorClave = new Map();
+  //       ordenPowerStage.forEach((item, idx) => {
+  //         puntosPorClave.set(item.clave, obtenerPuntosPowerStage(idx + 1));
+  //       });
+  //
+  //       pilotosBase.forEach(p => {
+  //         p.puntosPower = puntosPorClave.get(p.clave) || 0;
+  //         p.totalPuntos = p.puntosGeneral + p.puntosPower;
+  //       });
+  //     } else {
+  //       pilotosBase.forEach(p => {
+  //         p.puntosPower = '';
+  //         p.totalPuntos = p.puntosGeneral;
+  //       });
+  //     }
+  //
+  //     resultado[cat] = pilotosBase;
+  //   });
+  //
+  //   return { resultado, categoriasOrdenadas, hayPowerStage };
+  // }
+
   // ─── PIE DE PÁGINA ────────────────────────────────────────────────────────────
-  function construirColumnasPuntos(doc, todosLosPilotos) {
-    const medirTexto = (texto, size) => {
-      doc.setFontSize(size);
-      return doc.getStringUnitWidth(texto) * size / doc.internal.scaleFactor;
-    };
-
-    let maxPiloto   = medirTexto('PILOTO', FONT_SIZE_HEADER);
-    let maxVehiculo = medirTexto('VEHICULO', FONT_SIZE_HEADER);
-
-    todosLosPilotos.forEach(p => {
-      const wP = medirTexto(p.nombre || '', FONT_SIZE_FILA);
-      const wV = medirTexto(p.vehiculo || '', FONT_SIZE_FILA);
-      if (wP > maxPiloto) maxPiloto = wP;
-      if (wV > maxVehiculo) maxVehiculo = wV;
-    });
-
-    const PADDING = 3;
-    const anchoPiloto = Math.ceil(maxPiloto) + PADDING * 2;
-    const anchoVehiculo = Math.ceil(maxVehiculo) + PADDING * 2;
-    const anchoGeneral = Math.max(medirTexto('GENERAL', FONT_SIZE_HEADER) + PADDING * 2, 16);
-    const anchoPower = Math.max(medirTexto('POWER ST.', FONT_SIZE_HEADER) + PADDING * 2, 18);
-    const anchoTotal = Math.max(medirTexto('TOTAL', FONT_SIZE_HEADER) + PADDING * 2, 14);
-
-    const fijos = ANCHO_POS + anchoPiloto + anchoVehiculo + anchoGeneral + anchoPower + anchoTotal;
-    const escala = fijos > ANCHO_UTIL ? ANCHO_UTIL / fijos : 1;
-    const esc = v => v * escala;
-
-    return [
-      { label: 'POS',       campo: '_pos',      ancho: esc(ANCHO_POS),      align: 'center', bold: true  },
-      { label: 'PILOTO',    campo: '_piloto',   ancho: esc(anchoPiloto),    align: 'center', bold: true  },
-      { label: 'VEHICULO',  campo: '_vehiculo', ancho: esc(anchoVehiculo),  align: 'center', bold: false },
-      { label: 'GENERAL',   campo: '_general',  ancho: esc(anchoGeneral),   align: 'center', bold: false },
-      { label: 'POWER ST.', campo: '_power',    ancho: esc(anchoPower),     align: 'center', bold: false },
-      { label: 'TOTAL',     campo: '_totalPts', ancho: esc(anchoTotal),     align: 'center', bold: true  },
-    ];
-  }
-
-  function calcularPuntosCampeonatoPorCategorias() {
-    const clasificacion = calcularClasifPorCategorias();
-    const categoriasOrdenadas = Object.keys(clasificacion);
-    const pePowerStage = obtenerPowerStagePE();
-    const hayPowerStage = Boolean(pePowerStage);
-    const resultado = {};
-
-    categoriasOrdenadas.forEach(cat => {
-      const pilotosBase = clasificacion[cat].map((p, idx) => ({
-        ...p,
-        posicionFinal: idx + 1,
-        puntosGeneral: obtenerPuntosGeneral(idx + 1),
-        puntosPower: 0,
-        totalPuntos: 0,
-      }));
-
-      if (hayPowerStage) {
-        const campoPS = `PE${pePowerStage}`;
-        const ordenPowerStage = pilotosBase
-          .map(p => {
-            const tiempoPS = p.registro ? p.registro[campoPS] : '';
-            if (!tiempoPS || esDNF(tiempoPS)) return null;
-            const segPS = tiempoASegundos(tiempoPS);
-            if (segPS >= 999999) return null;
-            return {
-              clave: p.clave,
-              segPS,
-            };
-          })
-          .filter(Boolean)
-          .sort((a, b) => a.segPS - b.segPS);
-
-        const puntosPorClave = new Map();
-        ordenPowerStage.forEach((item, idx) => {
-          puntosPorClave.set(item.clave, obtenerPuntosPowerStage(idx + 1));
-        });
-
-        pilotosBase.forEach(p => {
-          p.puntosPower = puntosPorClave.get(p.clave) || 0;
-          p.totalPuntos = p.puntosGeneral + p.puntosPower;
-        });
-      } else {
-        pilotosBase.forEach(p => {
-          p.puntosPower = '';
-          p.totalPuntos = p.puntosGeneral;
-        });
-      }
-
-      resultado[cat] = pilotosBase;
-    });
-
-    return { resultado, categoriasOrdenadas, hayPowerStage };
-  }
-
   function dibujarPieDePagina(doc, totalPaginas) {
     const ahora = new Date().toLocaleString('es-AR', {
       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -628,90 +629,91 @@
     doc.save(`clasif-final-categorias-${hoy}.pdf`);
   }
 
-  async function generarPDFPuntosCampeonato() {
-    if (typeof window.pilotosData === 'undefined' || window.pilotosData.length === 0) {
-      alert('Los datos aun no estan cargados. Espera un momento e intenta de nuevo.');
-      return;
-    }
-    if (typeof window.tramosData === 'undefined' || window.tramosData.length === 0) {
-      alert('No hay datos de tramos cargados.');
-      return;
-    }
+  // [PUNTOS-K DESACTIVADO] Generación del PDF de puntos de campeonato
+  // async function generarPDFPuntosCampeonato() {
+  //   if (typeof window.pilotosData === 'undefined' || window.pilotosData.length === 0) {
+  //     alert('Los datos aun no estan cargados. Espera un momento e intenta de nuevo.');
+  //     return;
+  //   }
+  //   if (typeof window.tramosData === 'undefined' || window.tramosData.length === 0) {
+  //     alert('No hay datos de tramos cargados.');
+  //     return;
+  //   }
+  //
+  //   if (typeof window.jspdf === 'undefined') {
+  //     await new Promise((resolve, reject) => {
+  //       const script = document.createElement('script');
+  //       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  //       script.onload = resolve;
+  //       script.onerror = () => reject(new Error('No se pudo cargar jsPDF'));
+  //       document.head.appendChild(script);
+  //     });
+  //   }
+  //
+  //   const { jsPDF } = window.jspdf;
+  //   const calculo = calcularPuntosCampeonatoPorCategorias();
+  //   const categoriasOrdenadas = calculo.categoriasOrdenadas;
+  //
+  //   if (categoriasOrdenadas.length === 0) {
+  //     alert('No hay pilotos con clasificacion valida para generar el PDF de puntos.');
+  //     return;
+  //   }
+  //
+  //   const todosLosPilotos = categoriasOrdenadas.flatMap(c => calculo.resultado[c]);
+  //   const logoData = await cargarLogo();
+  //   const nombreRally = document.getElementById('rallyName')?.textContent || 'Rally';
+  //
+  //   const doc = new jsPDF({
+  //     orientation: 'portrait',
+  //     unit: 'mm',
+  //     format: 'a4',
+  //   });
+  //
+  //   const columnas = construirColumnasPuntos(doc, todosLosPilotos);
+  //   const yLimite = ALTO_PAGINA - MARGEN_V - 8;
+  //
+  //   let y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
+  //   y = dibujarEncabezadoTabla(doc, y, columnas);
+  //
+  //   for (const cat of categoriasOrdenadas) {
+  //     const pilotos = calculo.resultado[cat];
+  //
+  //     if (y + ALTO_BANNER_CLASE + ALTO_FILA > yLimite) {
+  //       doc.addPage();
+  //       y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
+  //       y = dibujarEncabezadoTabla(doc, y, columnas);
+  //     }
+  //
+  //     y = dibujarBannerCategoria(doc, cat, columnas, y);
+  //
+  //     for (const [idx, p] of pilotos.entries()) {
+  //       if (y + ALTO_FILA > yLimite) {
+  //         doc.addPage();
+  //         y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
+  //         y = dibujarEncabezadoTabla(doc, y, columnas);
+  //       }
+  //
+  //       dibujarFila(doc, {
+  //         _pos:      String(idx + 1),
+  //         _piloto:   p.nombre || '-',
+  //         _vehiculo: p.vehiculo || '-',
+  //         _general:  String(p.puntosGeneral),
+  //         _power:    calculo.hayPowerStage ? String(p.puntosPower) : ' ',
+  //         _totalPts: String(p.totalPuntos),
+  //       }, columnas, y, idx % 2 === 0);
+  //
+  //       y += ALTO_FILA;
+  //     }
+  //   }
+  //
+  //   const totalPaginas = doc.getNumberOfPages();
+  //   dibujarPieDePagina(doc, totalPaginas);
+  //
+  //   const hoy = new Date().toISOString().split('T')[0];
+  //   doc.save(`puntos-campeonato-${hoy}.pdf`);
+  // }
 
-    if (typeof window.jspdf === 'undefined') {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('No se pudo cargar jsPDF'));
-        document.head.appendChild(script);
-      });
-    }
-
-    const { jsPDF } = window.jspdf;
-    const calculo = calcularPuntosCampeonatoPorCategorias();
-    const categoriasOrdenadas = calculo.categoriasOrdenadas;
-
-    if (categoriasOrdenadas.length === 0) {
-      alert('No hay pilotos con clasificacion valida para generar el PDF de puntos.');
-      return;
-    }
-
-    const todosLosPilotos = categoriasOrdenadas.flatMap(c => calculo.resultado[c]);
-    const logoData = await cargarLogo();
-    const nombreRally = document.getElementById('rallyName')?.textContent || 'Rally';
-
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    const columnas = construirColumnasPuntos(doc, todosLosPilotos);
-    const yLimite = ALTO_PAGINA - MARGEN_V - 8;
-
-    let y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
-    y = dibujarEncabezadoTabla(doc, y, columnas);
-
-    for (const cat of categoriasOrdenadas) {
-      const pilotos = calculo.resultado[cat];
-
-      if (y + ALTO_BANNER_CLASE + ALTO_FILA > yLimite) {
-        doc.addPage();
-        y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
-        y = dibujarEncabezadoTabla(doc, y, columnas);
-      }
-
-      y = dibujarBannerCategoria(doc, cat, columnas, y);
-
-      for (const [idx, p] of pilotos.entries()) {
-        if (y + ALTO_FILA > yLimite) {
-          doc.addPage();
-          y = dibujarEncabezadoPagina(doc, nombreRally, logoData, 'PUNTOS CAMPEONATO POR CATEGORIA');
-          y = dibujarEncabezadoTabla(doc, y, columnas);
-        }
-
-        dibujarFila(doc, {
-          _pos:      String(idx + 1),
-          _piloto:   p.nombre || '-',
-          _vehiculo: p.vehiculo || '-',
-          _general:  String(p.puntosGeneral),
-          _power:    calculo.hayPowerStage ? String(p.puntosPower) : ' ',
-          _totalPts: String(p.totalPuntos),
-        }, columnas, y, idx % 2 === 0);
-
-        y += ALTO_FILA;
-      }
-    }
-
-    const totalPaginas = doc.getNumberOfPages();
-    dibujarPieDePagina(doc, totalPaginas);
-
-    const hoy = new Date().toISOString().split('T')[0];
-    doc.save(`puntos-campeonato-${hoy}.pdf`);
-  }
-
-  // ─── ATAJO DE TECLADO: Ctrl+Shift+P | Ctrl+Shift+K ──────────────────────────────────────────
+  // ─── ATAJO DE TECLADO: Ctrl+Shift+P ──────────────────────────────────────────
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'P') {
       e.preventDefault();
@@ -719,17 +721,20 @@
         console.error('Error al generar PDF:', err);
         alert('Ocurrió un error al generar el PDF. Revisá la consola.');
       });
-    } else if (e.ctrlKey && e.shiftKey && e.key === 'K') {
-      e.preventDefault();
-      generarPDFPuntosCampeonato().catch(err => {
-        console.error('Error al generar PDF de puntos:', err);
-        alert('Ocurrio un error al generar el PDF de puntos. Revisa la consola.');
-      });
     }
+    // [PUNTOS-K DESACTIVADO] Atajo Ctrl+Shift+K
+    // else if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+    //   e.preventDefault();
+    //   generarPDFPuntosCampeonato().catch(err => {
+    //     console.error('Error al generar PDF de puntos:', err);
+    //     alert('Ocurrio un error al generar el PDF de puntos. Revisa la consola.');
+    //   });
+    // }
   });
 
   // Exponer por si se quiere llamar manualmente desde la consola
   window.generarPDFClasificacion = generarPDF;
-  window.generarPDFPuntosCampeonato = generarPDFPuntosCampeonato;
+  // [PUNTOS-K DESACTIVADO]
+  // window.generarPDFPuntosCampeonato = generarPDFPuntosCampeonato;
 
 })();
