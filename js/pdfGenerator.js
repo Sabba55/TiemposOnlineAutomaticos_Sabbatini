@@ -14,12 +14,20 @@
   };
 
   // ─── DIMENSIONES ─────────────────────────────────────────────────────────────
-  // A4 portrait: 210 x 297 mm
+  // A4 portrait: 210 x 297 mm  |  A4 landscape: 297 x 210 mm
+  // Se ajustan con configurarPagina() según la orientación del PDF a generar.
   const MARGEN_H     = 8;
   const MARGEN_V     = 3;
-  const ANCHO_PAGINA = 210;
-  const ALTO_PAGINA  = 297;
-  const ANCHO_UTIL   = ANCHO_PAGINA - MARGEN_H * 2;
+  let ANCHO_PAGINA = 210;
+  let ALTO_PAGINA  = 297;
+  let ANCHO_UTIL   = ANCHO_PAGINA - MARGEN_H * 2;
+
+  function configurarPagina(orientacion) {
+    const horizontal = orientacion === 'landscape';
+    ANCHO_PAGINA = horizontal ? 297 : 210;
+    ALTO_PAGINA  = horizontal ? 210 : 297;
+    ANCHO_UTIL   = ANCHO_PAGINA - MARGEN_H * 2;
+  }
 
   const ALTO_FILA         = 7;
   const ALTO_ENC_TABLA    = 8;
@@ -43,7 +51,7 @@
   const ANCHO_LOGO = 35;
 
   // ─── HELPERS DE TIEMPO ───────────────────────────────────────────────────────
-  const { tiempoASegundos, esDNF, obtenerTiempoEtapa } = window.UtilidadesTiempo;
+  const { tiempoASegundos, esDNF, obtenerTiempoEtapa, segundosATiempo } = window.UtilidadesTiempo;
   const { obtenerPeorTiempo, calcularTiempoDNF } = window.UtilidadesDNF;
   const { ordenarCategorias } = window.UtilidadesCategorias;
 
@@ -573,6 +581,8 @@
     const logoData        = await cargarLogo();
     const nombreRally     = document.getElementById('rallyName')?.textContent || 'Rally';
 
+    configurarPagina('portrait');
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit:        'mm',
@@ -713,7 +723,588 @@
   //   doc.save(`puntos-campeonato-${hoy}.pdf`);
   // }
 
-  // ─── ATAJO DE TECLADO: Ctrl+Shift+P ──────────────────────────────────────────
+  // ─── LIBRO DE CÓMPUTOS (Ctrl+Shift+K) ────────────────────────────────────────
+  // PDF horizontal con una hoja por cada PE (si un PE tiene muchos pilotos ocupa
+  // varias hojas, y el siguiente PE siempre arranca en hoja nueva).
+  // Replica la lógica de /pages/tramoGeneral.html?pe=N:
+  //   · Tabla izquierda → Clasificación P.E.
+  //       Pos | Piloto | Tiempo | Dif. 1° | PROM
+  //   · Tabla derecha   → Clasificación General hasta ese PE
+  //       Pos | Piloto | Clase | Tiempo | Penal. | T. Total | Dif. 1° | Dif. Ant. | PROM
+  // Las dos tablas van pegadas (sin espacio) dentro de un contenedor con su header:
+  //   [ "PE # | Tramo | kms"                              "Hoja: (n/total)" ]
+  //   [ tabla P.E.                | tabla General                         ]
+  const TITULO_LIBRO        = 'LIBRO DE CÓMPUTOS - CLASIFICACIÓN PARCIAL Y GENERAL';
+  const TEXTO_HEADER_LIBRO  = 'CLASIFICACIÓN PARCIAL Y GENERAL';
+  const ALTO_HEADER_LIBRO   = 8;
+  const ALTO_FILA_LIBRO_MAX = 6;    // altura de fila cuando hay pocos pilotos
+  const ALTO_FILA_LIBRO_MIN = 3.8;  // altura mínima antes de pasar a otra hoja
+  const PADDING_LIBRO       = 3;
+
+  const hexARgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+
+  // Mismos colores que css/tramoGeneral.css
+  const COLORES_LIBRO = {
+    primeroNro:   hexARgb('#ffab1a'),
+    primeroResto: hexARgb('#e7edf5'),
+    dnfNro:       hexARgb('#fee2e2'),
+    // Fondo del chip de la columna POS. CL. (1°, 2° y 3° de la clase)
+    posClase: {
+      1: hexARgb('#000000'), // negro
+      2: hexARgb('#4b4b4b'), // gris oscuro
+      3: hexARgb('#8c8c8c'), // gris claro
+    },
+    categorias: {
+      1:  hexARgb('#ffc988'), // Naranja
+      2:  hexARgb('#ffa3a3'), // Rojo
+      3:  hexARgb('#ffeb77'), // Amarillo
+      4:  hexARgb('#9fc7ff'), // Azul
+      5:  hexARgb('#af90ff'), // Violeta
+      6:  hexARgb('#6ee0ff'), // Celeste
+      7:  hexARgb('#a0f0e1'), // Celeste agua
+      8:  hexARgb('#deff97'), // Verde limón
+      9:  hexARgb('#eed186'), // Amarillo caramelo
+      10: hexARgb('#f2f0e8'), // Blanco
+      11: hexARgb('#fca8e3'), // Genérico rosa
+      12: hexARgb('#dcdcd5'), // Genérico gris
+      13: hexARgb('#c7f5f7'), // Genérico agua
+    },
+  };
+
+  // Columnas (mismas que tramoGeneral). "min" = ancho mínimo en mm.
+  const COLUMNAS_LIBRO_PE = [
+    { label: 'POS',     campo: 'pos',    min: 5 },
+    { label: 'PILOTO',  campo: 'piloto', min: 0 },
+    { label: 'TIEMPO',  campo: 'tiempo', min: 0 },
+    { label: 'DIF. 1°', campo: 'dif1',   min: 0 },
+    { label: 'PROM',    campo: 'prom',   min: 7 },
+  ];
+  const COLUMNAS_LIBRO_GENERAL = [
+    { label: 'POS',       campo: 'pos',      min: 5 },
+    { label: 'PILOTO',    campo: 'piloto',   min: 0 },
+    { label: 'CLASE',     campo: 'clase',    min: 0 },
+    { label: 'POS. CL.',  campo: 'posClase', min: 5 },
+    { label: 'NETO',    campo: 'tiempo',   min: 0 },
+    { label: 'PENAL.',    campo: 'penal',    min: 0 },
+    { label: 'TOTAL',  campo: 'total',    min: 0 },
+    { label: 'DIF. 1°',   campo: 'dif1',     min: 0 },
+    { label: 'DIF. ANT.', campo: 'difAnt',   min: 0 },
+    { label: 'PROM',      campo: 'prom',     min: 7 },
+  ];
+
+  // ── Helpers copiados de js/tramoGeneral.js (misma lógica) ────────────────────
+  function obtenerColorCategoriaLibro(categoria) {
+    const c = (categoria || '').trim().toUpperCase();
+
+    if (c === 'RC1' || c === 'RALLY1') return 1;
+    if (c === 'RC2' || c === 'RALLY2') return 2;
+    if (c === 'RCMR') return 3;
+    if (c === 'RC4') return 4;
+    if (c === 'RC3' || c === 'JUNIOR') return 5;
+    if (c === 'RC5') return 6;
+    if (c === 'RC6') return 7;
+    if (c === 'S1600') return 8;
+    if (c === 'WRC' || c === 'WRC 2.0') return 9;
+    if (c === 'A' || c === 'GR. A') return 10;
+
+    return null;
+  }
+
+  function crearMapaColoresLibro(categorias) {
+    const disponibles = [11, 12, 13];
+    let siguiente = 0;
+    const mapa = {};
+
+    categorias.forEach(cat => {
+      const predeterminado = obtenerColorCategoriaLibro(cat);
+      if (predeterminado !== null) {
+        mapa[cat] = predeterminado;
+        return;
+      }
+      mapa[cat] = disponibles[siguiente % disponibles.length];
+      siguiente++;
+    });
+
+    return mapa;
+  }
+
+  function formatearDifLibro(segundos) {
+    if (segundos === 0) return '-';
+    const texto = segundosATiempo(segundos, 2).replace(/(\.\d)\d+/, '$1');
+    return '+' + texto;
+  }
+
+  function velocidadPELibro(segundos, km) {
+    if (segundos >= 999999 || !km || km === '') return '-';
+    const distancia = parseFloat(km);
+    if (isNaN(distancia) || distancia <= 0) return '-';
+    return (distancia / (segundos / 3600)).toFixed(0);
+  }
+
+  function velocidadTotalLibro(segundos, peNumero, tramos) {
+    if (segundos >= 999999) return '-';
+
+    let distanciaTotal = 0;
+    for (let i = 1; i <= peNumero; i++) {
+      const tramo = tramos.find(t => t.PE === i.toString());
+      if (tramo && tramo.KMS) {
+        const d = parseFloat(tramo.KMS);
+        if (!isNaN(d) && d > 0) distanciaTotal += d;
+      }
+    }
+
+    if (distanciaTotal === 0) return '-';
+    return (distanciaTotal / (segundos / 3600)).toFixed(0);
+  }
+
+  function nombreTramoLibro(tramo) {
+    if (!tramo) return '';
+    const desde = tramo.Desde || '';
+    const hasta = tramo.Hasta || '';
+    if (desde && hasta) return `${desde} - ${hasta}`;
+    return tramo.Nombre || tramo.NOMBRE || '';
+  }
+
+  // ── Cálculo de datos por PE (igual que renderizarResultados de tramoGeneral) ─
+  function calcularDatosLibro() {
+    const pilotos = window.pilotosData;
+    const tramos  = window.tramosData.filter(t =>
+      String(t.PE || '').trim() !== '' && !esFilaShakedownTramo(t)
+    );
+
+    const categorias = ordenarCategorias(
+      [...new Set(pilotos.map(p => p.Categoria || p.CATEGORIA))].filter(c => c)
+    );
+    const mapaColores = crearMapaColoresLibro(categorias);
+
+    const peNumeros = [...new Set(
+      tramos
+        .map(t => parseInt(String(t.PE).trim(), 10))
+        .filter(n => Number.isInteger(n) && n >= 1)
+    )].sort((a, b) => a - b);
+
+    // Peor tiempo (sin DNF) de una categoría en un PE — se usa para valuar los DNF
+    const cachePeor = {};
+    const peorTiempo = (pe, categoria) => {
+      const clave = `${pe}_${categoria}`;
+      if (!(clave in cachePeor)) {
+        const lista = pilotos
+          .filter(x => obtenerTiempoEtapa(x, pe) && (x.Categoria || x.CATEGORIA) === categoria)
+          .map(x => {
+            const valor = obtenerTiempoEtapa(x, pe);
+            return { tiempoSegundos: tiempoASegundos(valor), tieneDNF: esDNF(valor) };
+          })
+          .sort((a, b) => a.tiempoSegundos - b.tiempoSegundos);
+        cachePeor[clave] = obtenerPeorTiempo(lista);
+      }
+      return cachePeor[clave];
+    };
+
+    return peNumeros.map(peNumero => {
+      const peTexto = String(peNumero);
+      const tramo   = tramos.find(t => t.PE === peTexto);
+      const kms     = tramo ? tramo.KMS : null;
+
+      // ─ Clasificación P.E. (tabla izquierda) ─
+      const listaPE = pilotos
+        .filter(p => obtenerTiempoEtapa(p, peTexto))
+        .map(p => {
+          const valor     = obtenerTiempoEtapa(p, peTexto);
+          const categoria = p.Categoria || p.CATEGORIA || '';
+          return {
+            nombre:         p.Nombre || p.NOMBRE || '',
+            categoria:      categoria,
+            colorIdx:       mapaColores[categoria] || 1,
+            tiempo:         valor,
+            tiempoSegundos: tiempoASegundos(valor),
+            tieneDNF:       esDNF(valor),
+          };
+        })
+        .sort((a, b) => a.tiempoSegundos - b.tiempoSegundos);
+
+      const peorPorCategoria = {};
+      categorias.forEach(cat => { peorPorCategoria[cat] = peorTiempo(peTexto, cat); });
+
+      listaPE.forEach(p => {
+        if (p.tieneDNF) {
+          p.tiempoSegundos = calcularTiempoDNF(peorPorCategoria[p.categoria] || 0);
+          p.tiempo         = segundosATiempo(p.tiempoSegundos, 2);
+        }
+      });
+      listaPE.sort((a, b) => a.tiempoSegundos - b.tiempoSegundos);
+
+      const mejorPE = listaPE.length > 0 ? listaPE[0].tiempoSegundos : 0;
+
+      const filasPE = listaPE.map((p, i) => ({
+        valores: {
+          pos:    String(i + 1),
+          piloto: p.nombre,
+          tiempo: p.tieneDNF ? 'DNF' : p.tiempo,
+          dif1:   formatearDifLibro(p.tiempoSegundos - mejorPE),
+          prom:   velocidadPELibro(p.tiempoSegundos, kms),
+        },
+        estilo: {
+          tipo:     i === 0 ? 'pos1' : (p.tieneDNF ? 'dnf' : 'categoria'),
+          colorIdx: p.colorIdx,
+        },
+      }));
+
+      // ─ Clasificación General hasta este PE (tabla derecha) ─
+      const listaGeneral = pilotos
+        .map(p => {
+          const categoria = p.Categoria || p.CATEGORIA;
+          let total    = 0;
+          let tuvoDNF  = false;
+
+          for (let i = 1; i <= peNumero; i++) {
+            const tiempo = obtenerTiempoEtapa(p, i);
+            if (!tiempo || tiempo === '') return null;
+
+            if (esDNF(tiempo)) {
+              total  += calcularTiempoDNF(peorTiempo(i, categoria));
+              tuvoDNF = true;
+            } else {
+              const seg = tiempoASegundos(tiempo);
+              if (seg >= 999999) return null;
+              total += seg;
+            }
+          }
+
+          const penal    = tiempoASegundos(p.PENALIZACION || p.Penalizacion || '');
+          const penalSeg = penal < 999999 ? penal : 0;
+
+          return {
+            nombre:     p.Nombre || p.NOMBRE || '',
+            categoria:  p.Categoria || p.CATEGORIA || '',
+            total:      total,
+            penalSeg:   penalSeg,
+            totalFinal: total + penalSeg,
+            tieneDNF:   tuvoDNF,
+          };
+        })
+        .filter(p => p !== null)
+        .sort((a, b) => a.totalFinal - b.totalFinal);
+
+      const mejorGeneral = listaGeneral.length > 0 ? listaGeneral[0].totalFinal : 0;
+
+      const posicionesPorClase = {};
+
+      listaGeneral.forEach(p => {
+        if (!posicionesPorClase[p.categoria]) {
+          posicionesPorClase[p.categoria] = 0;
+        }
+
+        posicionesPorClase[p.categoria]++;
+        p.posClase = posicionesPorClase[p.categoria];
+      });
+
+      const filasGeneral = listaGeneral.map((p, i) => {
+        const difAnt = i > 0 ? p.totalFinal - listaGeneral[i - 1].totalFinal : 0;
+        return {
+          valores: {
+            pos:    String(i + 1),
+            piloto: p.nombre,
+            clase:  p.categoria,
+            posClase: String(p.posClase),
+            tiempo: segundosATiempo(p.total, 3),
+            penal:  p.penalSeg > 0 ? segundosATiempo(p.penalSeg, 2) : '-',
+            total:  segundosATiempo(p.totalFinal, 3),
+            dif1:   formatearDifLibro(p.totalFinal - mejorGeneral),
+            difAnt: formatearDifLibro(difAnt),
+            prom:   velocidadTotalLibro(p.totalFinal, peNumero, tramos),
+          },
+          estilo: {
+            tipo:        i === 0 ? 'pos1' : (p.tieneDNF ? 'dnf' : 'normal'),
+            penalActiva: p.penalSeg > 0,
+          },
+        };
+      });
+
+      const kmsTexto = kms && String(kms).trim() !== '' ? `${String(kms).trim()} km` : '';
+      const tituloPE = [`PE ${peNumero}`, nombreTramoLibro(tramo), kmsTexto]
+        .filter(Boolean)
+        .join(' | ');
+
+      return { peNumero, tituloPE, filasPE, filasGeneral };
+    }).filter(d => d.filasPE.length > 0 || d.filasGeneral.length > 0);
+  }
+
+  // ── Columnas: ancho automático según contenido, escalado al ancho útil ───────
+  function construirColumnasLibro(doc, datos) {
+    const medir = (texto, size, bold) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(size);
+      return doc.getStringUnitWidth(String(texto)) * size / doc.internal.scaleFactor;
+    };
+
+    const anchoNatural = (espec, filas) => {
+      let max = medir(espec.label, FONT_SIZE_HEADER, true);
+      filas.forEach(f => {
+        const w = medir(f.valores[espec.campo] ?? '', FONT_SIZE_FILA, true);
+        if (w > max) max = w;
+      });
+      return Math.max(espec.min, Math.ceil(max) + PADDING_LIBRO * 2);
+    };
+
+    const filasPE      = datos.flatMap(d => d.filasPE);
+    const filasGeneral = datos.flatMap(d => d.filasGeneral);
+
+    const izq = COLUMNAS_LIBRO_PE.map(e => ({ ...e, ancho: anchoNatural(e, filasPE) }));
+    const der = COLUMNAS_LIBRO_GENERAL.map(e => ({ ...e, ancho: anchoNatural(e, filasGeneral) }));
+
+    // La columna PILOTO tiene el mismo ancho en las dos tablas
+    const anchoPiloto = Math.max(
+      izq.find(c => c.campo === 'piloto').ancho,
+      der.find(c => c.campo === 'piloto').ancho
+    );
+    izq.find(c => c.campo === 'piloto').ancho = anchoPiloto;
+    der.find(c => c.campo === 'piloto').ancho = anchoPiloto;
+
+    // Escalar para que las dos tablas juntas ocupen todo el ancho útil
+    const suma  = [...izq, ...der].reduce((s, c) => s + c.ancho, 0);
+    const k     = ANCHO_UTIL / suma;
+    izq.forEach(c => { c.ancho *= k; });
+    der.forEach(c => { c.ancho *= k; });
+
+    return {
+      izq,
+      der,
+      anchoIzq: izq.reduce((s, c) => s + c.ancho, 0),
+    };
+  }
+
+  // ── Dibujo ───────────────────────────────────────────────────────────────────
+  function dibujarHeaderContenedorLibro(doc, y, textoIzq, textoDer) {
+    doc.setFillColor(...COLORES.bannerCategoria);
+    doc.rect(MARGEN_H, y, ANCHO_UTIL, ALTO_HEADER_LIBRO, 'F');
+
+    const yTexto = y + ALTO_HEADER_LIBRO / 2 + 8 * 0.35 / 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORES.textoClaro);
+    doc.text(textoIzq, MARGEN_H + 4, yTexto);
+    if (textoDer) doc.text(textoDer, MARGEN_H + ANCHO_UTIL - 4, yTexto, { align: 'right' });
+  }
+
+  function dibujarEncabezadoTablaLibro(doc, x0, y, columnas) {
+    const anchoTabla = columnas.reduce((s, c) => s + c.ancho, 0);
+
+    doc.setFillColor(...COLORES.encabezadoTabla);
+    doc.rect(x0, y, anchoTabla, ALTO_ENC_TABLA, 'F');
+
+    let x = x0;
+    columnas.forEach((col, i) => {
+      if (i > 0) {
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(0.2);
+        doc.line(x, y, x, y + ALTO_ENC_TABLA);
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(FONT_SIZE_HEADER);
+      doc.setTextColor(...COLORES.textoClaro);
+      doc.text(
+        col.label,
+        x + col.ancho / 2,
+        y + ALTO_ENC_TABLA / 2 + FONT_SIZE_HEADER * 0.35 / 2,
+        { align: 'center' }
+      );
+      x += col.ancho;
+    });
+  }
+
+  function dibujarFilaLibro(doc, x0, y, altoFila, fontSize, columnas, fila, indice) {
+    const { valores, estilo } = fila;
+    const impar = indice % 2 === 0;
+    const rellenoBase = impar ? COLORES.filaImpar : COLORES.filaPar;
+
+    let x = x0;
+    columnas.forEach((col, i) => {
+      // Fondo de la celda
+      let relleno = rellenoBase;
+      if (estilo.tipo === 'pos1') {
+        relleno = COLORES_LIBRO.categorias[estilo.colorIdx] || rellenoBase;
+      } else if (estilo.tipo === 'dnf' && i === 0) {
+        relleno = COLORES_LIBRO.dnfNro;
+      } else if (estilo.tipo === 'categoria') {
+        relleno = COLORES_LIBRO.categorias[estilo.colorIdx] || rellenoBase;
+      }
+      doc.setFillColor(...relleno);
+      doc.rect(x, y, col.ancho, altoFila, 'F');
+
+      // Bordes de la celda
+      doc.setDrawColor(...COLORES.borde);
+      doc.setLineWidth(0.10);
+      doc.line(x, y + altoFila, x + col.ancho, y + altoFila);
+      if (i < columnas.length - 1) doc.line(x + col.ancho, y, x + col.ancho, y + altoFila);
+
+      // Texto
+      const valor = String(valores[col.campo] ?? '-');
+      const negrita = estilo.tipo !== 'dnf' && (
+        col.campo === 'pos' ||
+        estilo.tipo === 'pos1' ||
+        (col.campo === 'penal' && estilo.penalActiva)
+      );
+      const rojo = estilo.tipo === 'dnf' || (col.campo === 'penal' && estilo.penalActiva);
+
+      doc.setFont('helvetica', negrita ? 'bold' : 'normal');
+      let fs = fontSize;
+      doc.setFontSize(fs);
+      const ancho = doc.getStringUnitWidth(valor) * fs / doc.internal.scaleFactor;
+      if (ancho > col.ancho - 1) {
+        fs = Math.max(4.5, fs * (col.ancho - 1) / ancho);
+        doc.setFontSize(fs);
+      }
+
+      let colorTexto = rojo ? COLORES.rojo : COLORES.texto;
+      let yTexto     = y + altoFila / 2 + fs * 0.35 / 2;
+
+      // POS. CL.: "chip" cuadrado según posición en la clase (1° negro, 2° gris oscuro, 3° gris claro, resto solo borde)
+      if (col.campo === 'posClase' && /^\d+$/.test(valor)) {
+        const posCl   = parseInt(valor, 10);
+        const altoChip  = Math.min(altoFila - 0.8, 4.6);
+        const anchoChip = Math.min(col.ancho - 0.8, Math.max(altoChip, ancho + 1.6));
+        const xChip     = x + (col.ancho - anchoChip) / 2;
+        const yChip     = y + (altoFila - altoChip) / 2;
+        const fondoChip = COLORES_LIBRO.posClase[posCl];
+
+        if (fondoChip) {
+          doc.setFillColor(...fondoChip);
+          doc.rect(xChip, yChip, anchoChip, altoChip, 'F');
+          colorTexto = [255, 255, 255];
+        } else {
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.08);
+          doc.rect(xChip, yChip, anchoChip, altoChip, 'S');
+        }
+
+        // Centrado vertical exacto del dígito dentro del chip (alto de cifra ≈ 0.72 × fuente)
+        yTexto = yChip + altoChip / 2 + (fs * 0.3528 * 0.72) / 2;
+      }
+
+      doc.setTextColor(...colorTexto);
+      doc.text(valor, x + col.ancho / 2, yTexto, { align: 'center' });
+
+      x += col.ancho;
+    });
+  }
+
+  async function asegurarJsPDF() {
+    if (typeof window.jspdf === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const script   = document.createElement('script');
+        script.src     = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        script.onload  = resolve;
+        script.onerror = () => reject(new Error('No se pudo cargar jsPDF'));
+        document.head.appendChild(script);
+      });
+    }
+    return window.jspdf.jsPDF;
+  }
+
+  // ── Función principal ────────────────────────────────────────────────────────
+  async function generarPDFLibroComputos() {
+    if (typeof window.pilotosData === 'undefined' || window.pilotosData.length === 0) {
+      alert('Los datos aún no están cargados. Esperá un momento e intentá de nuevo.');
+      return;
+    }
+    if (typeof window.tramosData === 'undefined' || window.tramosData.length === 0) {
+      alert('No hay datos de tramos cargados.');
+      return;
+    }
+
+    const datos = calcularDatosLibro();
+    if (datos.length === 0) {
+      alert('Todavía no hay tiempos cargados para generar el Libro de Cómputos.');
+      return;
+    }
+
+    const jsPDF       = await asegurarJsPDF();
+    const logoData    = await cargarLogo();
+    const nombreRally = document.getElementById('rallyName')?.textContent || 'Rally';
+
+    configurarPagina('landscape');
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit:        'mm',
+      format:      'a4',
+    });
+
+    const columnas = construirColumnasLibro(doc, datos);
+    const xIzq     = MARGEN_H;
+    const xDer     = xIzq + columnas.anchoIzq;
+
+    // Página 1: encabezado de siempre (logo + título + rally + línea)
+    const yHeader   = dibujarEncabezadoPagina(doc, nombreRally, logoData, TITULO_LIBRO);
+    const yEncTabla = yHeader + ALTO_HEADER_LIBRO;
+    const yFilas0   = yEncTabla + ALTO_ENC_TABLA;
+    const yLimite   = ALTO_PAGINA - MARGEN_V - 8;
+    const disponible = yLimite - yFilas0;
+
+    let paginaLista = true; // la página 1 ya tiene su encabezado
+    const abrirPagina = () => {
+      if (!paginaLista) {
+        doc.addPage();
+        dibujarEncabezadoPagina(doc, nombreRally, logoData, TITULO_LIBRO);
+      }
+      paginaLista = false;
+    };
+
+    for (const d of datos) {
+      const maxFilas      = Math.max(d.filasPE.length, d.filasGeneral.length);
+      const maxPorHoja    = Math.max(1, Math.floor(disponible / ALTO_FILA_LIBRO_MIN));
+      const totalHojas    = Math.max(1, Math.ceil(maxFilas / maxPorHoja));
+      const filasPorHoja  = Math.max(1, Math.ceil(maxFilas / totalHojas));
+      const altoFila      = Math.min(ALTO_FILA_LIBRO_MAX, disponible / filasPorHoja);
+      const fontFila      = Math.min(FONT_SIZE_FILA, Math.max(5.5, altoFila * 1.4));
+
+      for (let hoja = 0; hoja < totalHojas; hoja++) {
+        abrirPagina();
+
+        const desde    = hoja * filasPorHoja;
+        const hasta    = desde + filasPorHoja;
+        const filasIzq = d.filasPE.slice(desde, hasta);
+        const filasDer = d.filasGeneral.slice(desde, hasta);
+        const n        = Math.max(filasIzq.length, filasDer.length);
+        const yFin     = yFilas0 + n * altoFila;
+
+        // Header del contenedor: "PE # | Tramo | kms" a la izquierda, "Hoja: (n/total)" a la derecha
+        const textoHoja = totalHojas > 1 ? `Hoja: (${hoja + 1}/${totalHojas})` : '';
+        dibujarHeaderContenedorLibro(doc, yHeader, d.tituloPE, textoHoja);
+
+        // Las dos tablas, pegadas
+        dibujarEncabezadoTablaLibro(doc, xIzq, yEncTabla, columnas.izq);
+        dibujarEncabezadoTablaLibro(doc, xDer, yEncTabla, columnas.der);
+
+        filasIzq.forEach((fila, i) => {
+          dibujarFilaLibro(doc, xIzq, yFilas0 + i * altoFila, altoFila, fontFila, columnas.izq, fila, desde + i);
+        });
+        filasDer.forEach((fila, i) => {
+          dibujarFilaLibro(doc, xDer, yFilas0 + i * altoFila, altoFila, fontFila, columnas.der, fila, desde + i);
+        });
+
+        // Divisoria entre las dos tablas
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(0.6);
+        doc.line(xDer, yEncTabla, xDer, yFilas0);
+        doc.setDrawColor(...COLORES.encabezadoTabla);
+        doc.setLineWidth(0.5);
+        doc.line(xDer, yFilas0, xDer, yFin);
+
+        // Borde del contenedor
+        doc.setDrawColor(...COLORES.encabezadoTabla);
+        doc.setLineWidth(0.4);
+        doc.rect(MARGEN_H, yHeader, ANCHO_UTIL, yFin - yHeader, 'S');
+      }
+    }
+
+    dibujarPieDePagina(doc, doc.getNumberOfPages());
+
+    const hoy = new Date().toISOString().split('T')[0];
+    doc.save(`libro-de-computos-${hoy}.pdf`);
+  }
+
+  // ─── ATAJOS DE TECLADO: Ctrl+Shift+P / Ctrl+Shift+K ──────────────────────────────────────────
   document.addEventListener('keydown', function (e) {
     if (e.ctrlKey && e.shiftKey && e.key === 'P') {
       e.preventDefault();
@@ -722,18 +1313,19 @@
         alert('Ocurrió un error al generar el PDF. Revisá la consola.');
       });
     }
-    // [PUNTOS-K DESACTIVADO] Atajo Ctrl+Shift+K
-    // else if (e.ctrlKey && e.shiftKey && e.key === 'K') {
-    //   e.preventDefault();
-    //   generarPDFPuntosCampeonato().catch(err => {
-    //     console.error('Error al generar PDF de puntos:', err);
-    //     alert('Ocurrio un error al generar el PDF de puntos. Revisa la consola.');
-    //   });
-    // }
+    // Ctrl+Shift+K → Libro de Cómputos (PDF horizontal, una hoja por PE)
+    else if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+      e.preventDefault();
+      generarPDFLibroComputos().catch(err => {
+        console.error('Error al generar el Libro de Cómputos:', err);
+        alert('Ocurrió un error al generar el Libro de Cómputos. Revisá la consola.');
+      });
+    }
   });
 
   // Exponer por si se quiere llamar manualmente desde la consola
   window.generarPDFClasificacion = generarPDF;
+  window.generarPDFLibroComputos = generarPDFLibroComputos;
   // [PUNTOS-K DESACTIVADO]
   // window.generarPDFPuntosCampeonato = generarPDFPuntosCampeonato;
 
