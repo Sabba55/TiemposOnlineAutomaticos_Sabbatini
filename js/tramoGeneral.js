@@ -421,4 +421,3 @@ function actualizarUltimaActualizacion() {
 }
 
 cargarDatos();
-setInterval(cargarDatos, 30000);
