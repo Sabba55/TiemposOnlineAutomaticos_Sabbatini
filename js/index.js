@@ -604,7 +604,12 @@ function verClasificacionFinal() {
 
 function actualizarUltimaActualizacion() {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('es-AR');
+    const timeStr = now.toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23'
+    });
     document.getElementById('lastUpdate').textContent = 
         `Última actualización: ${timeStr}`;
 }
