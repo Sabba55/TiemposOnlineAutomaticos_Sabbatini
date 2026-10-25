@@ -27,7 +27,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(rgba(17, 19, 21, 0.3), rgba(15, 23, 42, 0.68)),
-                url('https://wallpaperaccess.com/full/93137.jpg') center/cover fixed;
+                url('https://wallpaper.forfun.com/fetch/0a/0ac85b49b758e6bbbee9424aa7185361.jpeg') center/cover fixed;
     min-height: 100vh;
     padding: 0;
     min-width: 1300px;
@@ -65,18 +65,17 @@ body {
 }
 
 .header-content {
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: none;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
 }
 
-.logo-container {
+/* .logo-container {
     position: absolute;
     left: 0;
-    width: 250px;
+    width: 240px;
     height: 60px;
     display: flex;
     align-items: center;
@@ -84,6 +83,38 @@ body {
 }
 
 .logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+} */
+
+.logo-container,
+.logo-rally {
+    position: absolute;
+    width: 250px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-container {
+    left: 0;
+}
+
+.logo-rally {
+    right: 0;
+    width: 140px;
+    height: 70px;
+}
+
+.logo-rally img {
+    width: 100%;
+    height: 100%;
+}
+
+.logo-container img,
+.logo-rally img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
@@ -96,7 +127,7 @@ body {
 .header-title {
     font-family: 'Orbitron', serif;
     color: var(--color-texto-claro);
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 800;
     letter-spacing: 1.4px;
     text-transform: uppercase;

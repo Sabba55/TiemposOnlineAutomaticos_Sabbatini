@@ -177,6 +177,40 @@ function validarConsistenciaDatos() {
     return { valido: true };
 }
 
+// Convierte un link de Google Drive en una URL de imagen directa.
+// Si no es de Drive (ruta local o URL normal), la devuelve tal cual.
+function obtenerUrlImagen(url) {
+    const texto = String(url || '').trim();
+    if (!texto) return '';
+
+    const coincidencia = texto.match(/drive\.google\.com\/.*?\/d\/([\w-]+)|drive\.google\.com\/.*?[?&]id=([\w-]+)/);
+    const idArchivo = coincidencia ? (coincidencia[1] || coincidencia[2]) : '';
+
+    return idArchivo ? `https://lh3.googleusercontent.com/d/${idArchivo}` : texto;
+}
+
+// Muestra la chapa del rally si hay link; si no hay o falla, queda el espacio vacío.
+function aplicarChapaRally(filaRally) {
+    const img = document.getElementById('chapaRally');
+    if (!img) return;
+
+    const url = obtenerUrlImagen(filaRally?.Chapa || filaRally?.CHAPA || filaRally?.chapa || '');
+
+    if (!url) {
+        img.hidden = true;
+        img.removeAttribute('src');
+        delete img.dataset.origen;
+        return;
+    }
+
+    if (img.dataset.origen === url) return; // sin cambios: no recargar en cada sincronización
+
+    img.dataset.origen = url;
+    img.onload = () => { img.hidden = false; };
+    img.onerror = () => { img.hidden = true; };
+    img.src = url;
+}
+
 async function cargarDatos() {
     try {
         const [rallyResponse, tramosResponse, pilotosResponse, inscriptosResponse, horariosResponse] = await Promise.all([
@@ -200,6 +234,7 @@ async function cargarDatos() {
             document.getElementById('rallyName').textContent = nombreRally;
             document.title = nombreRally;
         }
+        aplicarChapaRally(rallyData[0]);
 
         tramosData = analizarCSV(tramosText);
         const pilotosBaseData = analizarCSV(pilotosText, {
