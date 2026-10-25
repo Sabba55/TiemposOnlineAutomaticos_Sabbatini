@@ -30,7 +30,6 @@ body {
                 url('https://wallpaperaccess.com/full/93137.jpg') center/cover fixed;
     min-height: 100vh;
     padding: 0;
-    padding-top: 100px;
     min-width: 1300px;
 }
 
@@ -60,10 +59,8 @@ body {
     padding: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
     z-index: 1000;
 }
 
