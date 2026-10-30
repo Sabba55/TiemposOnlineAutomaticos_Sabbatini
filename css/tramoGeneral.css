@@ -108,7 +108,7 @@ h1 {
     margin-left: 10px;
     margin-right: -4px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(97, 94, 94, 0.075);
     transition: background 0.2s ease;
     cursor: pointer;
 }
