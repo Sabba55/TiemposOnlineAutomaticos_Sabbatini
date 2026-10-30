@@ -1,0 +1,13 @@
+/* Contador "Próxima actualización en: Ns" */
+.proxima-actualizacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 20px;
+    padding: 6px 0 10px;
+    color: var(--color-texto-suave);
+    font-size: 13px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums; /* los números no "bailan" al cambiar */
+}
