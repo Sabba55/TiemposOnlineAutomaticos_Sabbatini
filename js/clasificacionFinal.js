@@ -1,6 +1,6 @@
 const URL_RALLY = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const URL_TRAMOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=289895386&single=true&output=csv';
-const URL_PILOTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR78fTAwcReep3kCYUG7iod7Ly6SzBgFMvd76_414TyhhkEQiWOXs9j3EOAcXKBKlX4Z7Ri/pub?gid=0&single=true&output=csv';
+const URL_PILOTOS = 'https://script.google.com/macros/s/AKfycbxhXq8F1MwYNUwbiu3tw4ghGmfxq9XijDLW2bbU5JjHQzctFhuyME2_LnSGcSXtQwBa/exec?action=read';
 const URL_INSCRIPTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
 
 const { analizarCSV: analizarCSVBase, esValorSi, fusionarPilotosConInscriptos, normalizarFechasComparacion } = window.UtilidadesCSV;
@@ -396,6 +396,8 @@ async function cargarDatos() {
         const pilotosText = await pilotosResponse.text();
         const inscriptosText = await inscriptosResponse.text();
 
+        if (!pilotosText.includes('RallyID')) throw new Error('Respuesta inválida del script de tiempos');
+
         const rallyData = analizarCSVBase(rallyText);
         const nombreRally = rallyData[0]?.Nombre || rallyData[0]?.NOMBRE || 'Clasificacion Final';
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
@@ -416,16 +418,20 @@ async function cargarDatos() {
         renderizarResultados();
         actualizarUltimaActualizacion();
     } catch (error) {
-        window.UtilidadesError.mostrarError(
-            document.getElementById('content'),
-            'Error al cargar la clasificación final.',
-            cargarDatos
-        );
-        
+        const hayDatos = pilotosData.length > 0 || tramosData.length > 0;
+        if (!hayDatos) {
+            window.UtilidadesError.mostrarError(
+                document.getElementById('content'),
+                'Error al cargar la clasificación final.',
+                cargarDatos
+            );
+        }
+
         console.error('Error cargando clasificación final:', error);
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarDatos();
+    window.AutoActualizacion.iniciar(cargarDatos);
 });

@@ -1,4 +1,4 @@
-const URL_PILOTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR78fTAwcReep3kCYUG7iod7Ly6SzBgFMvd76_414TyhhkEQiWOXs9j3EOAcXKBKlX4Z7Ri/pub?gid=0&single=true&output=csv';
+const URL_PILOTOS = 'https://script.google.com/macros/s/AKfycbxhXq8F1MwYNUwbiu3tw4ghGmfxq9XijDLW2bbU5JjHQzctFhuyME2_LnSGcSXtQwBa/exec?action=read';
 const URL_TRAMOS  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=289895386&single=true&output=csv';
 const URL_RALLY = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 
@@ -1582,7 +1582,9 @@ async function cargarDatos() {
         ]);
 
         const rallyData = analizarCSVBase(await respRally.text());
-        const pilotosBase = analizarPilotosCSV(await respPilotos.text());
+        const textoPilotos = await respPilotos.text();
+        if (!textoPilotos.includes('RallyID')) throw new Error('Respuesta inválida del script de tiempos');
+        const pilotosBase = analizarPilotosCSV(textoPilotos);
         const inscriptosData = analizarCSVBase(await respInscriptos.text());
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         datosPilotos = fusionarPilotosConInscriptos(pilotosBase, inscriptosData, fechaRally);
@@ -1622,4 +1624,4 @@ async function cargarDatos() {
 }
 
 cargarDatos();
-setInterval(cargarDatos, 30000);
+window.AutoActualizacion.iniciar(cargarDatos);

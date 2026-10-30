@@ -1,4 +1,4 @@
-const PILOTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9KuJ4zzR78fTAwcReep3kCYUG7iod7Ly6SzBgFMvd76_414TyhhkEQiWOXs9j3EOAcXKBKlX4Z7Ri/pub?gid=0&single=true&output=csv';
+const PILOTOS_URL = 'https://script.google.com/macros/s/AKfycbxhXq8F1MwYNUwbiu3tw4ghGmfxq9XijDLW2bbU5JjHQzctFhuyME2_LnSGcSXtQwBa/exec?action=read';
 const TRAMOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=289895386&single=true&output=csv';
 const RALLY_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=0&single=true&output=csv';
 const INSCRIPTOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToRsF3zwvqzcMttSdROC5E4tyHqpQsHaGpxJyRPzf4Aunc5-uX3IddO1vXmn64mt5Uur46HkLekr-d/pub?gid=551610778&single=true&output=csv';
@@ -165,6 +165,8 @@ async function cargarDatos() {
         const tramosText = await tramosResponse.text();
         const inscriptosText = await inscriptosResponse.text();
 
+        if (!pilotosText.includes('RallyID')) throw new Error('Respuesta inválida del script de tiempos');
+
         const rallyData = analizarCSV(rallyText);
         const fechaRally = normalizarFechasComparacion(rallyData[0]?.Fecha || rallyData[0]?.FECHA || rallyData[0]?.fecha || '');
         const pilotosBase = analizarPilotosCSV(pilotosText);
@@ -176,11 +178,14 @@ async function cargarDatos() {
         actualizarBotonesNavegacion();
         actualizarUltimaActualizacion();
     } catch (error) {
-        window.UtilidadesError.mostrarError(
-            document.getElementById('content'),
-            'Error al cargar los datos del tramo.',
-            cargarDatos
-        );
+        const hayDatos = pilotosData.length > 0 || tramosData.length > 0;
+        if (!hayDatos) {
+            window.UtilidadesError.mostrarError(
+                document.getElementById('content'),
+                'Error al cargar los datos del tramo.',
+                cargarDatos
+            );
+        }
 
         console.error('Error:', error);
     }
@@ -421,3 +426,4 @@ function actualizarUltimaActualizacion() {
 }
 
 cargarDatos();
+window.AutoActualizacion.iniciar(cargarDatos);
