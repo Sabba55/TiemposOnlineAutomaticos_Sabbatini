@@ -191,6 +191,31 @@ async function cargarDatos() {
     }
 }
 
+// ── Selector de PE (flecha dentro del badge "PE #") ──────────────────────────
+function construirSelectorPE() {
+    const opciones = tramosData
+        .map(t => `<option value="${t.PE}" ${t.PE === peNumber ? 'selected' : ''}>PE ${t.PE} | ${obtenerNombreTramo(t)}</option>`)
+        .join('');
+
+    return `
+        <span class="pe-selector">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"/>
+            </svg>
+            <select class="pe-selector__select" aria-label="Elegir tramo" onchange="irAPE(this.value)">
+                ${opciones}
+            </select>
+        </span>
+    `;
+}
+
+function irAPE(pe) {
+    if (!pe || pe === peNumber) return;
+    window.location.href = `tramoGeneral.html?pe=${pe}`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function mostrarInfoTramo() {
     peNumber = obtenerParametroURL('pe');
     const tramoActual = tramosData.find(t => t.PE === peNumber);
@@ -200,12 +225,22 @@ function mostrarInfoTramo() {
         const nombreTramo = obtenerNombreTramo(tramoActual);
 
         if (tituloElement) {
+            // Si nada cambió, no se reconstruye el título: así la actualización automática
+            // no cierra el desplegable mientras el usuario lo está usando.
+            const firma = JSON.stringify([peNumber, tramosData.map(t => [t.PE, obtenerNombreTramo(t)])]);
+            if (tituloElement.dataset.firma === firma) return;
+            tituloElement.dataset.firma = firma;
+
             tituloElement.innerHTML = `
-                <span class="titulo-tramo-pe">PE ${peNumber}</span>
+                <span class="titulo-tramo-pe">
+                    PE ${peNumber}
+                    ${construirSelectorPE()}
+                </span>
                 <span class="titulo-tramo-texto">| ${nombreTramo}</span>
             `;
         }
     } else if (tituloElement) {
+        delete tituloElement.dataset.firma;
         tituloElement.textContent = `CLASIFICACIÓN GENERAL - PE ${peNumber}`;
     }
 }

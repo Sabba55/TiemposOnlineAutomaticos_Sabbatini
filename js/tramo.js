@@ -236,6 +236,31 @@ function esPowerStage(numeroPE) {
     return pes.length === 1 && pes[0] === numeroPE;
 }
 
+// ── Selector de PE (flecha dentro del badge "PE #") ──────────────────────────
+function construirSelectorPE() {
+    const opciones = datosTramos
+        .map(t => `<option value="${t.PE}" ${t.PE === numeroPE ? 'selected' : ''}>PE ${t.PE} | ${obtenerNombreTramo(t)}</option>`)
+        .join('');
+
+    return `
+        <span class="pe-selector">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"/>
+            </svg>
+            <select class="pe-selector__select" aria-label="Elegir tramo" onchange="irAPE(this.value)">
+                ${opciones}
+            </select>
+        </span>
+    `;
+}
+
+function irAPE(pe) {
+    if (!pe || pe === numeroPE) return;
+    window.location.href = `tramo.html?pe=${pe}`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function mostrarInfoTramo() {
     numeroPE = obtenerParametroURL('pe');
     const tramoActual = datosTramos.find(t => t.PE === numeroPE);
@@ -246,12 +271,22 @@ function mostrarInfoTramo() {
         const esPS = esPowerStage(numeroPE);
 
         if (tituloElement) {
+            // Si nada cambió, no se reconstruye el título: así la actualización automática
+            // no cierra el desplegable mientras el usuario lo está usando.
+            const firma = JSON.stringify([numeroPE, esPS, datosTramos.map(t => [t.PE, obtenerNombreTramo(t)])]);
+            if (tituloElement.dataset.firma === firma) return;
+            tituloElement.dataset.firma = firma;
+
             tituloElement.innerHTML = `
-                <span class="titulo-tramo-pe ${esPS ? 'titulo-tramo-pe--power-stage' : ''}">PE ${numeroPE}</span>
+                <span class="titulo-tramo-pe ${esPS ? 'titulo-tramo-pe--power-stage' : ''}">
+                    PE ${numeroPE}
+                    ${construirSelectorPE()}
+                </span>
                 <span class="titulo-tramo-texto">| ${nombreTramo}</span>
             `;
         }
     } else if (tituloElement) {
+        delete tituloElement.dataset.firma;
         tituloElement.textContent = `RESULTADOS - PE ${numeroPE}`;
     }
 }
